@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="styler.css">
+</head>
+<body>
+
+<header>
+  <h1>Dashboard</h1>
+  <button onclick="logout()">Logout</button>
+</header>
+
+<main>
+
+  
+  <section>
+    <h2>Submit Service Request</h2>
+
+    <form id="requestForm">
+      <label for="category">Category</label>
+      <select id="category" required>
+        <option value="">Select category</option>
+        <option value="Pothole">Pothole</option>
+        <option value="Water">Water Issue</option>
+        <option value="Electricity">Electricity</option>
+        <option value="Waste">Waste</option>
+      </select>
+
+      <label for="description">Description</label>
+      <textarea id="description" required></textarea>
+
+      <button type="submit">Submit</button>
+    </form>
+
+    <output id="requestFeedback"></output>
+  </section>
+
+
+  <section>
+    <h2>My Requests</h2>
+
+    <article>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Category</th>
+            <th>Description</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="requestsTable">
+        </tbody>
+      </table>
+    </article>
+
+  </section>
+
+</main>
+
+<footer>
+  <p>&copy; 2026 Municipal Portal</p>
+</footer>
+
+<script src="dashboard.js"></script>
+</body>
+</html>
