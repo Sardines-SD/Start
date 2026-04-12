@@ -16,9 +16,6 @@ const db = admin.firestore();
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "Login.html"));
-});
 
 // ── Middleware: verify Firebase token ─────────────────────────────────────────
 async function requireAuth(req, res, next) {
