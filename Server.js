@@ -5,6 +5,10 @@ const admin   = require("firebase-admin");
 
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
 // ── Firebase Admin init ───────────────────────────────────────────────────────
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
