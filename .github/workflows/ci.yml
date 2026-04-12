@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run tests
+      - name: Run tests with coverage
         run: npm test
         env:
           ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}

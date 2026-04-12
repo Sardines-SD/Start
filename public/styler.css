@@ -11,7 +11,7 @@ footer {
     text-align: center;
     padding: 20px;
     background: rgba(255, 255, 255, 0.1);
-    color: white;
+    color: rgb(0, 0, 0);
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
@@ -31,7 +31,7 @@ header button {
 header button:hover {
     background: #f0f0f0;
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 8px rgba(255, 7, 7, 0.995);
 }
 
 main {
@@ -41,11 +41,11 @@ main {
 }
 
 section {
-    background: white;
+    background: rgb(0, 0, 0);
     padding: 30px;
     margin-bottom: 30px;
     border-radius: 15px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 32px rgb(82, 0, 80);
     transition: transform 0.3s ease;
 }
 
