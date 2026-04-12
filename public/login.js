@@ -3,8 +3,8 @@ import {
   getAuth,
   signInWithEmailAndPassword,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-
-const firebaseConfig = {
+import { firebaseConfig } from "./firebaseConfig.js";
+/*const firebaseConfig = {
   apiKey:            "AIzaSyBsGq_-mPlBAfCtEt3J-SzaMQgpKmHye9E",
   authDomain:        "municipality-50ae8.firebaseapp.com",
   projectId:         "municipality-50ae8",
@@ -12,6 +12,7 @@ const firebaseConfig = {
   messagingSenderId: "904618138528",
   appId:             "1:904618138528:web:f4bd52b683fe6585dd62c5",
 };
+*/
 
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
