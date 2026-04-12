@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="styler.css">
+  <style>
+    .badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+    .badge-pending     { background: #fff3cd; color: #856404; }
+    .badge-inprogress  { background: #cce5ff; color: #004085; }
+    .badge-resolved    { background: #d4edda; color: #155724; }
+    .badge-user        { background: #e2e3e5; color: #383d41; }
+    .badge-worker      { background: #d1ecf1; color: #0c5460; }
+    .badge-admin       { background: #f8d7da; color: #721c24; }
+
+    select.status-select, select.role-select {
+      padding: 4px 8px; border-radius: 6px; border: 1px solid #ccc;
+      font-size: 13px; cursor: pointer; margin-top: 0;
+    }
+
+    .stats { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+    .stat-card { flex: 1; min-width: 110px; background: white; border-radius: 10px; padding: 16px; text-align: center; border-top: 4px solid #007bff; }
+    .stat-card h3 { margin: 0; font-size: 28px; color: #007bff; }
+    .stat-card p  { margin: 4px 0 0; font-size: 13px; color: #666; }
+
+    .filter-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    .filter-bar select { margin-top: 0; width: auto; }
+
+    .role-tag { display: inline-block; background: #fde8e8; color: #b00; padding: 3px 10px; border-radius: 10px; font-size: 12px; font-weight: bold; margin-left: 8px; }
+
+    .tabs { display: flex; gap: 0; margin-bottom: 0; }
+    .tab-btn { padding: 10px 24px; background: #e9ecef; border: none; cursor: pointer; font-size: 15px; border-radius: 8px 8px 0 0; }
+    .tab-btn.active { background: white; font-weight: bold; color: #007bff; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Municipal Service Portal <span class="role-tag">Admin</span></h1>
+  <p id="welcomeMsg"></p>
+  <button onclick="logout()">Logout</button>
+</header>
+
+<main>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-card"><h3 id="totalCount">—</h3><p>Total Requests</p></div>
+    <div class="stat-card"><h3 id="pendingCount">—</h3><p>Pending</p></div>
+    <div class="stat-card"><h3 id="inprogressCount">—</h3><p>In Progress</p></div>
+    <div class="stat-card"><h3 id="resolvedCount">—</h3><p>Resolved</p></div>
+    <div class="stat-card"><h3 id="userCount">—</h3><p>Registered Users</p></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('requests')">All Requests</button>
+    <button class="tab-btn"       onclick="switchTab('users')">Manage Users</button>
+  </div>
+
+  <!-- Requests tab -->
+  <section class="tab-panel active" id="tab-requests">
+    <h2>All Service Requests</h2>
+    <div class="filter-bar">
+      <select id="filterStatus" onchange="filterRequests()">
+        <option value="">All statuses</option>
+        <option value="pending">Pending</option>
+        <option value="in-progress">In Progress</option>
+        <option value="resolved">Resolved</option>
+      </select>
+      <select id="filterCategory" onchange="filterRequests()">
+        <option value="">All categories</option>
+        <option value="Pothole">Pothole</option>
+        <option value="Water">Water Issue</option>
+        <option value="Electricity">Electricity</option>
+        <option value="Waste">Waste</option>
+      </select>
+    </div>
+    <article>
+      <table>
+        <thead>
+          <tr><th>ID</th><th>User</th><th>Category</th><th>Description</th><th>Date</th><th>Status</th><th>Update</th></tr>
+        </thead>
+        <tbody id="requestsTable"></tbody>
+      </table>
+    </article>
+  </section>
+
+  <!-- Users tab -->
+  <section class="tab-panel" id="tab-users">
+    <h2>Manage Users</h2>
+    <p style="color:#555; font-size:14px;">Change a user's role to promote them to worker or admin.</p>
+    <article>
+      <table>
+        <thead>
+          <tr><th>Username</th><th>Email</th><th>Ward</th><th>Current Role</th><th>Change Role</th></tr>
+        </thead>
+        <tbody id="usersTable"></tbody>
+      </table>
+    </article>
+  </section>
+
+</main>
+
+<footer>
+  <p>&copy; 2026 Municipal Portal</p>
+</footer>
+
+<script type="module" src="adminDashboard.js"></script>
+</body>
+</html>

@@ -2,22 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Dashboard</title>
+  <title>User Dashboard</title>
   <link rel="stylesheet" href="styler.css">
 </head>
 <body>
 
 <header>
-  <h1>Dashboard</h1>
+  <h1>Municipal Service Portal</h1>
+  <p id="welcomeMsg"></p>
   <button onclick="logout()">Logout</button>
 </header>
 
 <main>
 
-  
   <section>
     <h2>Submit Service Request</h2>
-
     <form id="requestForm">
       <label for="category">Category</label>
       <select id="category" required>
@@ -33,14 +32,11 @@
 
       <button type="submit">Submit</button>
     </form>
-
     <output id="requestFeedback"></output>
   </section>
 
-
   <section>
     <h2>My Requests</h2>
-
     <article>
       <table>
         <thead>
@@ -49,13 +45,12 @@
             <th>Category</th>
             <th>Description</th>
             <th>Status</th>
+            <th>Date</th>
           </tr>
         </thead>
-        <tbody id="requestsTable">
-        </tbody>
+        <tbody id="requestsTable"></tbody>
       </table>
     </article>
-
   </section>
 
 </main>

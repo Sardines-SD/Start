@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Worker Dashboard</title>
+  <link rel="stylesheet" href="styler.css">
+  <style>
+    .badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+    .badge-pending     { background: #fff3cd; color: #856404; }
+    .badge-inprogress  { background: #cce5ff; color: #004085; }
+    .badge-resolved    { background: #d4edda; color: #155724; }
+
+    select.status-select { padding: 4px 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 13px; cursor: pointer; margin-top: 0; }
+
+    .filter-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    .filter-bar select { margin-top: 0; width: auto; }
+
+    .role-tag { display: inline-block; background: #e0f0ff; color: #0056b3; padding: 3px 10px; border-radius: 10px; font-size: 12px; font-weight: bold; margin-left: 8px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Municipal Service Portal <span class="role-tag">Worker</span></h1>
+  <p id="welcomeMsg"></p>
+  <button onclick="logout()">Logout</button>
+</header>
+
+<main>
+
+  <section>
+    <h2>Assigned Requests</h2>
+    <p style="color:#555; font-size:14px;">View all submitted requests and update their status as you action them.</p>
+
+    <div class="filter-bar">
+      <select id="filterStatus" onchange="filterRequests()">
+        <option value="">All statuses</option>
+        <option value="pending">Pending</option>
+        <option value="in-progress">In Progress</option>
+        <option value="resolved">Resolved</option>
+      </select>
+      <select id="filterCategory" onchange="filterRequests()">
+        <option value="">All categories</option>
+        <option value="Pothole">Pothole</option>
+        <option value="Water">Water Issue</option>
+        <option value="Electricity">Electricity</option>
+        <option value="Waste">Waste</option>
+      </select>
+    </div>
+
+    <article>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Submitted By</th>
+            <th>Category</th>
+            <th>Description</th>
+            <th>Date</th>
+            <th>Status</th>
+            <th>Update Status</th>
+          </tr>
+        </thead>
+        <tbody id="requestsTable"></tbody>
+      </table>
+    </article>
+  </section>
+
+</main>
+
+<footer>
+  <p>&copy; 2026 Municipal Portal</p>
+</footer>
+
+<script type="module" src="workerDashboard.js"></script>
+</body>
+</html>

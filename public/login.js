@@ -2,9 +2,16 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import {
   getAuth,
   signInWithEmailAndPassword,
+  sendEmailVerification,
+  signOut,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { firebaseConfig } from "./firebaseConfig.js";
-/*const firebaseConfig = {
+import {
+  getFirestore,
+  doc,
+  getDoc,
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
   apiKey:            "AIzaSyBsGq_-mPlBAfCtEt3J-SzaMQgpKmHye9E",
   authDomain:        "municipality-50ae8.firebaseapp.com",
   projectId:         "municipality-50ae8",
@@ -12,13 +19,20 @@ import { firebaseConfig } from "./firebaseConfig.js";
   messagingSenderId: "904618138528",
   appId:             "1:904618138528:web:f4bd52b683fe6585dd62c5",
 };
-*/
 
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db   = getFirestore(app);
 
 const loginForm     = document.getElementById("loginForm");
 const loginFeedback = document.getElementById("loginFeedback");
+
+// Redirect map — role → dashboard page
+const ROLE_REDIRECT = {
+  admin:   "AdminDashboard.html",
+  worker:  "WorkerDashboard.html",
+  user:    "Dashboard.html",
+};
 
 if (loginForm) {
   loginForm.addEventListener("submit", async (e) => {
@@ -31,13 +45,43 @@ if (loginForm) {
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const idToken        = await userCredential.user.getIdToken();
+      const user           = userCredential.user;
+
+      // ── Block unverified emails ──────────────────────────────────────────────
+      if (!user.emailVerified) {
+        await signOut(auth);
+
+        loginFeedback.innerHTML =
+          "❌ Please verify your email before logging in. " +
+          "<a href='#' id='resendLink'>Resend verification email</a>.";
+
+        document.getElementById("resendLink").addEventListener("click", async (ev) => {
+          ev.preventDefault();
+          try {
+            const cred = await signInWithEmailAndPassword(auth, email, password);
+            await sendEmailVerification(cred.user);
+            await signOut(auth);
+            loginFeedback.textContent = "✅ Verification email resent. Check your inbox.";
+          } catch {
+            loginFeedback.textContent = "❌ Could not resend email. Please try again.";
+          }
+        });
+        return;
+      }
+
+      // ── Read role from Firestore ─────────────────────────────────────────────
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      const role    = userDoc.exists() ? userDoc.data().role : "user";
+      const idToken = await user.getIdToken();
 
       localStorage.setItem("idToken",   idToken);
-      localStorage.setItem("userEmail", userCredential.user.email);
-      localStorage.setItem("userId",    userCredential.user.uid);
+      localStorage.setItem("userEmail", user.email);
+      localStorage.setItem("userId",    user.uid);
+      localStorage.setItem("role",      role);
 
-      window.location.href = "Dashboard.html";
+      // ── Redirect to correct dashboard ────────────────────────────────────────
+      window.location.href = ROLE_REDIRECT[role] ?? "Dashboard.html";
+
     } catch (err) {
       const messages = {
         "auth/invalid-credential": "Incorrect email or password.",
@@ -51,4 +95,3 @@ if (loginForm) {
     }
   });
 }
-
