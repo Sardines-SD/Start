@@ -2,8 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import {
   getAuth,
   signInWithEmailAndPassword,
-  sendEmailVerification,
-  signOut,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
   getFirestore,
@@ -27,11 +25,10 @@ const db   = getFirestore(app);
 const loginForm     = document.getElementById("loginForm");
 const loginFeedback = document.getElementById("loginFeedback");
 
-// Redirect map — role → dashboard page
 const ROLE_REDIRECT = {
-  admin:   "AdminDashboard.html",
-  worker:  "WorkerDashboard.html",
-  user:    "Dashboard.html",
+  admin:  "AdminDashboard.html",
+  worker: "WorkerDashboard.html",
+  user:   "Dashboard.html",
 };
 
 if (loginForm) {
@@ -47,39 +44,18 @@ if (loginForm) {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user           = userCredential.user;
 
-      // ── Block unverified emails ──────────────────────────────────────────────
-      if (!user.emailVerified) {
-        await signOut(auth);
-
-        loginFeedback.innerHTML =
-          "❌ Please verify your email before logging in. " +
-          "<a href='#' id='resendLink'>Resend verification email</a>.";
-
-        document.getElementById("resendLink").addEventListener("click", async (ev) => {
-          ev.preventDefault();
-          try {
-            const cred = await signInWithEmailAndPassword(auth, email, password);
-            await sendEmailVerification(cred.user);
-            await signOut(auth);
-            loginFeedback.textContent = "✅ Verification email resent. Check your inbox.";
-          } catch {
-            loginFeedback.textContent = "❌ Could not resend email. Please try again.";
-          }
-        });
-        return;
-      }
-
-      // ── Read role from Firestore ─────────────────────────────────────────────
+      // ── Always fetch role fresh from Firestore — never trust a cached value ──
       const userDoc = await getDoc(doc(db, "users", user.uid));
       const role    = userDoc.exists() ? userDoc.data().role : "user";
-      const idToken = await user.getIdToken();
+      const idToken = await user.getIdToken(true);
 
+      // Clear old session completely before writing new one
+      localStorage.clear();
       localStorage.setItem("idToken",   idToken);
       localStorage.setItem("userEmail", user.email);
       localStorage.setItem("userId",    user.uid);
       localStorage.setItem("role",      role);
 
-      // ── Redirect to correct dashboard ────────────────────────────────────────
       window.location.href = ROLE_REDIRECT[role] ?? "Dashboard.html";
 
     } catch (err) {

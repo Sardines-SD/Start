@@ -4,6 +4,11 @@ import {
   onAuthStateChanged,
   signOut,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey:            "AIzaSyBsGq_-mPlBAfCtEt3J-SzaMQgpKmHye9E",
@@ -16,24 +21,27 @@ const firebaseConfig = {
 
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db   = getFirestore(app);
 
-// Role → correct dashboard (for guards)
 const ROLE_REDIRECT = {
   admin:  "AdminDashboard.html",
   worker: "WorkerDashboard.html",
 };
 
-// ── Auth guard — users only ───────────────────────────────────────────────────
+// ── Auth guard — always re-check role from Firestore ─────────────────────────
 onAuthStateChanged(auth, async (user) => {
-  if (!user || !user.emailVerified) {
-    window.location.href = "Login.html";
-    return;
-  }
-  const role = localStorage.getItem("role");
-  if (role && role !== "user") {
+  if (!user) { window.location.href = "Login.html"; return; }
+
+  // Always read fresh role from Firestore — catches role changes made externally
+  const userDoc = await getDoc(doc(db, "users", user.uid));
+  const role    = userDoc.exists() ? userDoc.data().role : "user";
+  localStorage.setItem("role", role); // keep localStorage in sync
+
+  if (role !== "user") {
     window.location.href = ROLE_REDIRECT[role] ?? "Login.html";
     return;
   }
+
   document.getElementById("welcomeMsg").textContent = "Welcome, " + user.email;
   loadRequests();
 });
@@ -57,7 +65,6 @@ document.getElementById("requestForm").addEventListener("submit", async (e) => {
   const description = document.getElementById("description").value;
   const feedback    = document.getElementById("requestFeedback");
   feedback.textContent = "Submitting…";
-
   try {
     const token = await getFreshToken();
     const res   = await fetch("http://localhost:5000/api/requests", {
@@ -74,7 +81,7 @@ document.getElementById("requestForm").addEventListener("submit", async (e) => {
   }
 });
 
-// ── Load own requests only ────────────────────────────────────────────────────
+// ── Load own requests ─────────────────────────────────────────────────────────
 async function loadRequests() {
   const table = document.getElementById("requestsTable");
   table.innerHTML = "<tr><td colspan='5'>Loading…</td></tr>";

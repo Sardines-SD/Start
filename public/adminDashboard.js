@@ -4,6 +4,11 @@ import {
   onAuthStateChanged,
   signOut,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey:            "AIzaSyBsGq_-mPlBAfCtEt3J-SzaMQgpKmHye9E",
@@ -16,13 +21,18 @@ const firebaseConfig = {
 
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db   = getFirestore(app);
 
 let allRequests = [];
 
-// ── Auth guard — admins only ──────────────────────────────────────────────────
+// ── Auth guard — always re-check role from Firestore ─────────────────────────
 onAuthStateChanged(auth, async (user) => {
-  if (!user || !user.emailVerified) { window.location.href = "Login.html";     return; }
-  const role = localStorage.getItem("role");
+  if (!user) { window.location.href = "Login.html"; return; }
+
+  const userDoc = await getDoc(doc(db, "users", user.uid));
+  const role    = userDoc.exists() ? userDoc.data().role : "user";
+  localStorage.setItem("role", role);
+
   if (role === "worker") { window.location.href = "WorkerDashboard.html"; return; }
   if (role === "user")   { window.location.href = "Dashboard.html";       return; }
   if (role !== "admin")  { window.location.href = "Login.html";           return; }
@@ -44,7 +54,6 @@ window.logout = async function () {
   window.location.href = "Login.html";
 };
 
-// ── Tab switching ─────────────────────────────────────────────────────────────
 window.switchTab = function (tab) {
   document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
   document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
@@ -52,7 +61,7 @@ window.switchTab = function (tab) {
   event.target.classList.add("active");
 };
 
-// ── Load all requests ─────────────────────────────────────────────────────────
+// ── Requests ──────────────────────────────────────────────────────────────────
 async function loadAllRequests() {
   const table = document.getElementById("requestsTable");
   table.innerHTML = "<tr><td colspan='7'>Loading…</td></tr>";
@@ -125,7 +134,7 @@ window.updateStatus = async function (selectEl) {
   }
 };
 
-// ── Load all users ────────────────────────────────────────────────────────────
+// ── Users ─────────────────────────────────────────────────────────────────────
 async function loadAllUsers() {
   const table = document.getElementById("usersTable");
   table.innerHTML = "<tr><td colspan='5'>Loading…</td></tr>";
@@ -137,9 +146,7 @@ async function loadAllUsers() {
     if (!res.ok) throw new Error();
     const users = await res.json();
     document.getElementById("userCount").textContent = users.length;
-
     if (!users.length) { table.innerHTML = "<tr><td colspan='5'>No users found.</td></tr>"; return; }
-
     table.innerHTML = users.map(u => `
       <tr>
         <td>${u.username ?? "—"}</td>
@@ -160,13 +167,11 @@ async function loadAllUsers() {
   }
 }
 
-// ── Update a user's role ──────────────────────────────────────────────────────
 window.updateRole = async function (selectEl) {
   const uid     = selectEl.dataset.uid;
   const newRole = selectEl.value;
   if (!newRole) return;
   if (!confirm(`Change this user's role to "${newRole}"?`)) { selectEl.value = ""; return; }
-
   try {
     const token = await getFreshToken();
     const res   = await fetch(`http://localhost:5000/api/users/${uid}/role`, {

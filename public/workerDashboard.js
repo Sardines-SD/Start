@@ -4,6 +4,11 @@ import {
   onAuthStateChanged,
   signOut,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey:            "AIzaSyBsGq_-mPlBAfCtEt3J-SzaMQgpKmHye9E",
@@ -16,19 +21,21 @@ const firebaseConfig = {
 
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db   = getFirestore(app);
 
 let allRequests = [];
 
-// ── Auth guard — workers only ─────────────────────────────────────────────────
+// ── Auth guard — always re-check role from Firestore ─────────────────────────
 onAuthStateChanged(auth, async (user) => {
-  if (!user || !user.emailVerified) {
-    window.location.href = "Login.html";
-    return;
-  }
-  const role = localStorage.getItem("role");
-  if (role === "admin")  { window.location.href = "AdminDashboard.html"; return; }
-  if (role === "user")   { window.location.href = "Dashboard.html";      return; }
-  if (role !== "worker") { window.location.href = "Login.html";          return; }
+  if (!user) { window.location.href = "Login.html"; return; }
+
+  const userDoc = await getDoc(doc(db, "users", user.uid));
+  const role    = userDoc.exists() ? userDoc.data().role : "user";
+  localStorage.setItem("role", role);
+
+  if (role === "admin") { window.location.href = "AdminDashboard.html"; return; }
+  if (role === "user")  { window.location.href = "Dashboard.html";      return; }
+  if (role !== "worker") { window.location.href = "Login.html";         return; }
 
   document.getElementById("welcomeMsg").textContent = "Welcome, " + user.email;
   loadAllRequests();
@@ -46,7 +53,6 @@ window.logout = async function () {
   window.location.href = "Login.html";
 };
 
-// ── Load all requests ─────────────────────────────────────────────────────────
 async function loadAllRequests() {
   const table = document.getElementById("requestsTable");
   table.innerHTML = "<tr><td colspan='7'>Loading…</td></tr>";
@@ -63,11 +69,9 @@ async function loadAllRequests() {
   }
 }
 
-// ── Render table ──────────────────────────────────────────────────────────────
 function renderTable(data) {
   const table = document.getElementById("requestsTable");
   if (!data.length) { table.innerHTML = "<tr><td colspan='7'>No requests found.</td></tr>"; return; }
-
   table.innerHTML = data.map(req => `
     <tr>
       <td>${req.id}</td>
@@ -75,11 +79,7 @@ function renderTable(data) {
       <td>${req.category}</td>
       <td>${req.description}</td>
       <td>${req.createdAt ?? "—"}</td>
-      <td>
-        <span class="badge badge-${req.status === "in-progress" ? "inprogress" : req.status}">
-          ${req.status}
-        </span>
-      </td>
+      <td><span class="badge badge-${req.status === "in-progress" ? "inprogress" : req.status}">${req.status}</span></td>
       <td>
         <select class="status-select" data-id="${req.firestoreId}" onchange="updateStatus(this)">
           <option value="">Change…</option>
@@ -91,21 +91,16 @@ function renderTable(data) {
     </tr>`).join("");
 }
 
-// ── Filter ────────────────────────────────────────────────────────────────────
 window.filterRequests = function () {
   const s = document.getElementById("filterStatus").value;
   const c = document.getElementById("filterCategory").value;
-  renderTable(allRequests.filter(r =>
-    (!s || r.status === s) && (!c || r.category === c)
-  ));
+  renderTable(allRequests.filter(r => (!s || r.status === s) && (!c || r.category === c)));
 };
 
-// ── Update status ─────────────────────────────────────────────────────────────
 window.updateStatus = async function (selectEl) {
   const firestoreId = selectEl.dataset.id;
   const newStatus   = selectEl.value;
   if (!newStatus) return;
-
   try {
     const token = await getFreshToken();
     const res   = await fetch(`http://localhost:5000/api/requests/${firestoreId}`, {
@@ -114,9 +109,7 @@ window.updateStatus = async function (selectEl) {
       body:    JSON.stringify({ status: newStatus }),
     });
     if (!res.ok) throw new Error();
-    allRequests = allRequests.map(r =>
-      r.firestoreId === firestoreId ? { ...r, status: newStatus } : r
-    );
+    allRequests = allRequests.map(r => r.firestoreId === firestoreId ? { ...r, status: newStatus } : r);
     window.filterRequests();
   } catch {
     alert("❌ Failed to update status. Please try again.");

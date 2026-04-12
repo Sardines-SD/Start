@@ -36,7 +36,7 @@ if (registerForm) {
     const password        = document.getElementById("registerPassword").value;
     const confirmPassword = document.getElementById("registerPasswordCornfirm").value;
 
-    // ── Validation ────────────────────────────────────────────────────────────
+    // ── Validation ─────────────────────────────────────────────────────────────
     if (password !== confirmPassword) {
       registerFeedback.textContent = "❌ Passwords do not match.";
       return;
@@ -49,16 +49,16 @@ if (registerForm) {
     registerFeedback.textContent = "Creating account…";
 
     try {
-      // 1. Create user in Firebase Auth — password is hashed automatically
+      // 1. Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user           = userCredential.user;
 
-      // 2. Save extra profile info to Firestore users collection
+      // 2. Save profile info to Firestore
       await setDoc(doc(db, "users", user.uid), {
         username,
         email,
         ward,
-        role:      "user",   // to make someone admin: change this to "admin" in Firestore Console
+        role:      "user",
         createdAt: serverTimestamp(),
       });
 
