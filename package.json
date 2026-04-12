@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "dashboard.js",
-  "scripts": {
-    "test": "echo \"No tests yet — Sprint 1\" && exit 0",
-    "start": "node server.js"
-  },
+ "scripts": {
+  "start": "node Server.js",
+  "test": "jest --coverage"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -16,5 +16,8 @@
     "dotenv": "^17.4.1",
     "express": "^5.2.1",
     "firebase-admin": "^13.8.0"
+  },
+  "devDependencies": {
+    "jest": "^30.3.0"
   }
 }
