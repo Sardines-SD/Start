@@ -67,7 +67,7 @@ document.getElementById("requestForm").addEventListener("submit", async (e) => {
   feedback.textContent = "Submitting…";
   try {
     const token = await getFreshToken();
-    const res   = await fetch("http://localhost:5000/api/requests", {
+    const res   = await fetch("/api/requests", {
       method:  "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
       body:    JSON.stringify({ category, description }),
@@ -87,7 +87,7 @@ async function loadRequests() {
   table.innerHTML = "<tr><td colspan='5'>Loading…</td></tr>";
   try {
     const token = await getFreshToken();
-    const res   = await fetch("http://localhost:5000/api/requests", {
+    const res   = await fetch("/api/requests", {
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
     });
     if (!res.ok) throw new Error();

@@ -3,7 +3,7 @@ const cors    = require("cors");
 const path    = require("path");
 const admin   = require("firebase-admin");
 
-const serviceAccount = require("./serviceAccountKey.json");
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
 // ── Firebase Admin init ───────────────────────────────────────────────────────
 admin.initializeApp({
@@ -168,6 +168,8 @@ app.patch("/api/users/:uid/role", requireAuth, async (req, res) => {
 });
 
 // ── Start server ──────────────────────────────────────────────────────────────
-app.listen(5000, () => {
-  console.log("Server running on http://localhost:5000");
+const PORT = process.env.PORT || 5000 ;
+app.listen(PORT, () => {
+  
+  console.log("Server running on port ${PORT}")
 });

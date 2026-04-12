@@ -58,7 +58,7 @@ async function loadAllRequests() {
   table.innerHTML = "<tr><td colspan='7'>Loading…</td></tr>";
   try {
     const token = await getFreshToken();
-    const res   = await fetch("http://localhost:5000/api/requests", {
+    const res   = await fetch("/api/requests", {
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
     });
     if (!res.ok) throw new Error();
@@ -103,7 +103,7 @@ window.updateStatus = async function (selectEl) {
   if (!newStatus) return;
   try {
     const token = await getFreshToken();
-    const res   = await fetch(`http://localhost:5000/api/requests/${firestoreId}`, {
+    const res   = await fetch(`/api/requests/${firestoreId}`, {
       method:  "PATCH",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
       body:    JSON.stringify({ status: newStatus }),

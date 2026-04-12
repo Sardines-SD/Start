@@ -67,7 +67,7 @@ async function loadAllRequests() {
   table.innerHTML = "<tr><td colspan='7'>Loading…</td></tr>";
   try {
     const token = await getFreshToken();
-    const res   = await fetch("http://localhost:5000/api/requests", {
+    const res   = await fetch("/api/requests", {
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
     });
     if (!res.ok) throw new Error();
@@ -120,7 +120,7 @@ window.updateStatus = async function (selectEl) {
   if (!newStatus) return;
   try {
     const token = await getFreshToken();
-    const res   = await fetch(`http://localhost:5000/api/requests/${firestoreId}`, {
+    const res   = await fetch(`/api/requests/${firestoreId}`, {
       method:  "PATCH",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
       body:    JSON.stringify({ status: newStatus }),
@@ -140,7 +140,7 @@ async function loadAllUsers() {
   table.innerHTML = "<tr><td colspan='5'>Loading…</td></tr>";
   try {
     const token = await getFreshToken();
-    const res   = await fetch("http://localhost:5000/api/users", {
+    const res   = await fetch("/api/users", {
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
     });
     if (!res.ok) throw new Error();
@@ -174,7 +174,7 @@ window.updateRole = async function (selectEl) {
   if (!confirm(`Change this user's role to "${newRole}"?`)) { selectEl.value = ""; return; }
   try {
     const token = await getFreshToken();
-    const res   = await fetch(`http://localhost:5000/api/users/${uid}/role`, {
+    const res   = await fetch(`/api/users/${uid}/role`, {
       method:  "PATCH",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
       body:    JSON.stringify({ role: newRole }),
