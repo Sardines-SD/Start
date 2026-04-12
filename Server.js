@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require("express");
 const cors    = require("cors");
 const path    = require("path");
@@ -61,7 +62,7 @@ app.post("/api/requests", requireAuth, async (req, res) => {
 // ── GET /api/requests — load requests ────────────────────────────────────────
 // Admin sees ALL requests. Regular users see only their own.
 // Sorting is done in JS to avoid needing a Firestore composite index.
-const ADMIN_EMAIL = "admin@municipality.com"; // ← change to your admin email
+const ADMIN_EMAIL =  process.env.ADMIN_EMAIL; // ← change to your admin email
 
 app.get("/api/requests", requireAuth, async (req, res) => {
   try {
