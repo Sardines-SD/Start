@@ -1,11 +1,11 @@
 {
   "name": "assignment",
   "version": "1.0.0",
-  "description": "",
-  "main": "dashboard.js",
+  "description": "Municipal Service Delivery Reporting Portal",
+  "main": "Server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node Server.js"
+    "start": "node Server.js",
+    "test": "jest --coverage"
   },
   "keywords": [],
   "author": "",
@@ -13,7 +13,11 @@
   "type": "commonjs",
   "dependencies": {
     "cors": "^2.8.6",
+    "dotenv": "^17.4.1",
     "express": "^5.2.1",
     "firebase-admin": "^13.8.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
   }
 }
