@@ -9,15 +9,7 @@ import {
   setDoc,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey:            "AIzaSyBsGq_-mPlBAfCtEt3J-SzaMQgpKmHye9E",
-  authDomain:        "municipality-50ae8.firebaseapp.com",
-  projectId:         "municipality-50ae8",
-  storageBucket:     "municipality-50ae8.firebasestorage.app",
-  messagingSenderId: "904618138528",
-  appId:             "1:904618138528:web:f4bd52b683fe6585dd62c5",
-};
+import { firebaseConfig } from "./firebaseConfig.js";
 
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -36,7 +28,6 @@ if (registerForm) {
     const password        = document.getElementById("registerPassword").value;
     const confirmPassword = document.getElementById("registerPasswordCornfirm").value;
 
-    // ── Validation ─────────────────────────────────────────────────────────────
     if (password !== confirmPassword) {
       registerFeedback.textContent = "❌ Passwords do not match.";
       return;
@@ -46,14 +37,12 @@ if (registerForm) {
       return;
     }
 
-    registerFeedback.textContent = "Creating account…";
+    registerFeedback.textContent = "Creating account...";
 
     try {
-      // 1. Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user           = userCredential.user;
 
-      // 2. Save profile info to Firestore
       await setDoc(doc(db, "users", user.uid), {
         username,
         email,
@@ -62,9 +51,9 @@ if (registerForm) {
         createdAt: serverTimestamp(),
       });
 
-      registerFeedback.textContent = "✅ Registered successfully! Redirecting…";
+      registerFeedback.textContent = "✅ Registered successfully! Redirecting...";
       setTimeout(() => {
-        window.location.href = "Login.html";
+        window.location.href = "index.html";
       }, 1500);
 
     } catch (err) {
