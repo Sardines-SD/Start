@@ -1,78 +1,131 @@
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f4f6f8;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #eef2f7, #f8fafc);
+  color: #333;
 }
 
 header, footer {
   text-align: center;
-  padding: 15px;
-  background: #007bff;
+  padding: 20px;
+  background: linear-gradient(135deg, #007bff, #0056b3);
   color: white;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
 header button {
-  margin-top: 10px;
-  padding: 8px 12px;
+  margin-top: 12px;
+  padding: 10px 16px;
   border: none;
+  border-radius: 8px;
   background: white;
   color: #007bff;
+  font-weight: 600;
   cursor: pointer;
+  transition: all 0.3s ease;
 }
 
+header button:hover {
+  background: #e6f0ff;
+  transform: translateY(-2px);
+}
+
+/* Main Layout */
 main {
-  max-width: 700px;
-  margin: 30px auto;
+  max-width: 800px;
+  margin: 40px auto;
   padding: 20px;
 }
 
+/* Cards / Sections */
 section {
   background: white;
-  padding: 20px;
-  margin-bottom: 20px;
-  border-radius: 10px;
+  padding: 25px;
+  margin-bottom: 25px;
+  border-radius: 15px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+  transition: transform 0.2s ease;
 }
 
+section:hover {
+  transform: translateY(-3px);
+}
+
+/* Forms */
 form {
   display: flex;
   flex-direction: column;
 }
 
 label {
-  margin-top: 10px;
-  font-weight: bold;
+  margin-top: 12px;
+  font-weight: 600;
+  color: #444;
 }
 
 input, textarea, select {
-  padding: 10px;
-  margin-top: 5px;
+  padding: 12px;
+  margin-top: 6px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  transition: border 0.3s, box-shadow 0.3s;
+  font-size: 14px;
 }
 
+input:focus, textarea:focus, select:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 5px rgba(0,123,255,0.3);
+  outline: none;
+}
+
+/* Buttons */
 button {
-  margin-top: 15px;
-  padding: 10px;
-  background: #007bff;
+  margin-top: 18px;
+  padding: 12px;
+  background: linear-gradient(135deg, #007bff, #0056b3);
   color: white;
   border: none;
+  border-radius: 10px;
+  font-weight: 600;
   cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 button:hover {
-  background: #0056b3;
+  background: linear-gradient(135deg, #0056b3, #004099);
+  transform: translateY(-2px);
 }
 
+/* Table Styling */
 table {
   width: 100%;
   border-collapse: collapse;
+  margin-top: 15px;
+  overflow: hidden;
+  border-radius: 10px;
 }
 
-th, td {
-  padding: 10px;
-  border-bottom: 1px solid #ccc;
-  text-align: left;
+th {
+  background: #007bff;
+  color: white;
+  padding: 12px;
 }
 
+td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+tr:hover {
+  background: #f1f5ff;
+}
+
+/* Output */
 output {
   display: block;
-  margin-top: 10px;
+  margin-top: 12px;
+  padding: 10px;
+  background: #e9f2ff;
+  border-left: 4px solid #007bff;
+  border-radius: 6px;
 }
