@@ -1,50 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <title>Login</title>
-    <link rel="stylesheet" href="styler.css">
+  <meta charset="UTF-8">
+  <title>Login</title>
+  <link rel="stylesheet" href="styler.css">
 </head>
-
 <body>
 
-    <header>
-        <h1>Municipal Service Portal</h1>
-    </header>
+<header>
+  <h1>Municipal Service Portal</h1>
+</header>
 
-    <main>
-        <section>
-            <h2>Login</h2>
+<main>
+  <section>
+    <h2>Login</h2>
 
-            <form id="loginForm">
-                <label for="loginEmail">Email</label>
-                <input type="email" id="loginEmail" required>
+    <form id="loginForm">
+      <label for="loginEmail">Email</label>
+      <input type="email" id="loginEmail" required>
 
-                <label for="loginPassword">Password</label>
-                <input type="password" id="loginPassword" required>
+      <label for="loginPassword">Password</label>
+      <input type="password" id="loginPassword" required>
 
-                <button type="submit">Login</button>
-            </form>
+      <button type="submit">Login</button>
+    </form>
 
-            <p>
-                <a href="forgotPassword.html">Forgot your password?</a>
-            </p>
+    <p>
+      Don't have an account?
+      <a href="Register.html">Register here</a>
+    </p>
 
-            <p>
-                Don't have an account?
-                <a href="Register.html">Register here</a>
-            </p>
+    <output id="loginFeedback"></output>
+  </section>
+</main>
 
-            <output id="loginFeedback"></output>
-        </section>
-    </main>
+<footer>
+  <p>&copy; 2026 Municipal Portal</p>
+</footer>
 
-    <footer>
-        <p>&copy; 2026 Municipal Portal</p>
-    </footer>
-
-    <script type="module" src="login.js"></script>
+<script type="module" src="login.js"></script>
 </body>
-
 </html>
