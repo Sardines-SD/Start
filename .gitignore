@@ -140,3 +140,18 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 coverage/
 serviceAccountKey.json
+# Secrets and keys
+serviceAccountKey.json
+*.key
+*.pem
+.env
+
+# Node modules (already there usually)
+node_modules/
+
+# VS Code
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
