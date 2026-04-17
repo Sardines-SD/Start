@@ -2,13 +2,256 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Login</title>
+  <title>Login - Municipal Service Portal</title>
   <link rel="stylesheet" href="styler.css">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-color: #5a7fa8;
+      background-image:
+        linear-gradient(rgba(60, 90, 130, 0.60), rgba(60, 90, 130, 0.60)),
+        url('https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Johannesburg_skyline_from_ponte.jpg/1280px-Johannesburg_skyline_from_ponte.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+    }
+
+    /* Override styler.css header for this page */
+    header {
+      background: transparent;
+      box-shadow: none;
+      padding: 40px 20px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .header-brand h1 {
+      margin: 0;
+      font-size: 26px;
+      font-weight: 700;
+      color: #ffffff;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      text-align: left;
+      line-height: 1.3;
+    }
+
+    .welcome-block {
+      text-align: center;
+      margin-top: 6px;
+    }
+
+    .welcome-block h2 {
+      color: #ffffff;
+      font-size: 28px;
+      font-weight: 700;
+      margin: 0 0 6px;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+
+    .welcome-block p {
+      color: #ddeeff;
+      font-size: 15px;
+      margin: 0;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    /* Override styler.css main for this page */
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      margin: 0 auto;
+      max-width: 100%;
+    }
+
+    /* Override styler.css section for login card */
+    section {
+      background: rgba(225, 235, 250, 0.93);
+      border-radius: 12px;
+      padding: 36px 44px 30px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+      transform: none;
+      margin-bottom: 0;
+    }
+
+    section:hover {
+      transform: none;
+    }
+
+    section h2 {
+      text-align: center;
+      font-size: 22px;
+      font-weight: 700;
+      color: #1a2a3a;
+      margin: 0 0 22px;
+    }
+
+    /* Input rows with icon */
+    .input-row {
+      display: flex;
+      align-items: center;
+      background-color: #f5f8fc;
+      border: 1px solid #c8d4e0;
+      border-radius: 8px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+
+    .input-icon {
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #eaeff8;
+      border-right: 1px solid #c8d4e0;
+      height: 48px;
+      min-width: 48px;
+    }
+
+    .input-row input {
+      border: none;
+      background: transparent;
+      padding: 12px 14px;
+      font-size: 14px;
+      color: #1a2a3a;
+      outline: none;
+      width: 100%;
+      margin: 0;
+      box-shadow: none;
+    }
+
+    .input-row input:focus {
+      border: none;
+      box-shadow: none;
+    }
+
+    .input-row input::placeholder {
+      color: #7a94a8;
+    }
+
+    /* Override form flex for this page */
+    form {
+      display: block;
+    }
+
+    /* Override button for this page */
+    button[type="submit"] {
+      width: 100%;
+      margin-top: 20px;
+      padding: 14px;
+      background: linear-gradient(135deg, #2b5fa8, #1a3f7a);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    button[type="submit"]:hover {
+      background: linear-gradient(135deg, #1e4a8a, #12306b);
+      transform: translateY(-1px);
+    }
+
+    .card-links {
+      text-align: center;
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .card-links a {
+      color: #2b5fa8;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .card-links a:hover {
+      text-decoration: underline;
+    }
+
+    output#loginFeedback {
+      display: block;
+      margin-top: 14px;
+      padding: 10px;
+      background: #e9f2ff;
+      border-left: 4px solid #007bff;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    /* Override styler.css footer */
+    footer {
+      background: transparent;
+      box-shadow: none;
+      padding: 20px;
+    }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0;
+    }
+
+    .footer-links a {
+      color: #d8e6f5;
+      font-size: 14px;
+      text-decoration: none;
+      padding: 0 12px;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: #ffffff;
+    }
+
+    .footer-sep {
+      color: #a8bdd0;
+      font-size: 14px;
+    }
+  </style>
 </head>
 <body>
 
 <header>
-  <h1>Municipal Service Portal</h1>
+  <div class="header-brand">
+    <svg width="58" height="58" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
+      <path d="M36 4 L64 16 L64 38 C64 54 50 65 36 70 C22 65 8 54 8 38 L8 16 Z" fill="#2b5fa8" stroke="#a8c4e8" stroke-width="1.5"/>
+      <path d="M36 10 L58 20 L58 38 C58 51 46 61 36 66 C26 61 14 51 14 38 L14 20 Z" fill="#1e4a8a"/>
+      <rect x="24" y="28" width="24" height="16" rx="3" fill="none" stroke="#ffffff" stroke-width="2"/>
+      <rect x="30" y="22" width="12" height="10" rx="3" fill="none" stroke="#ffffff" stroke-width="2"/>
+      <circle cx="36" cy="36" r="2.5" fill="#ffffff"/>
+    </svg>
+    <h1>Municipal Service Delivery<br>Reporting Portal</h1>
+  </div>
+
+  <div class="welcome-block">
+    <h2>Welcome Back!</h2>
+    <p>Log in to report and track municipal issues in your community.</p>
+  </div>
 </header>
 
 <main>
@@ -16,28 +259,52 @@
     <h2>Login</h2>
 
     <form id="loginForm">
-      <label for="loginEmail">Email</label>
-      <input type="email" id="loginEmail" required>
+      <div class="input-row">
+        <div class="input-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="8" r="4" stroke="#6a84a0" stroke-width="1.8"/>
+            <path d="M4 20 C4 16 7.6 13 12 13 C16.4 13 20 16 20 20" stroke="#6a84a0" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <input type="email" id="loginEmail" placeholder="Email:" required>
+      </div>
 
-      <label for="loginPassword">Password</label>
-      <input type="password" id="loginPassword" required>
+      <div class="input-row">
+        <div class="input-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="11" width="14" height="10" rx="2" stroke="#6a84a0" stroke-width="1.8"/>
+            <path d="M8 11 L8 7 C8 4.8 9.8 3 12 3 C14.2 3 16 4.8 16 7 L16 11" stroke="#6a84a0" stroke-width="1.8" stroke-linecap="round"/>
+            <circle cx="12" cy="16" r="1.5" fill="#6a84a0"/>
+          </svg>
+        </div>
+        <input type="password" id="loginPassword" placeholder="Password:" required>
+      </div>
 
       <button type="submit">Login</button>
     </form>
 
-    <p>
-      Don't have an account?
-      <a href="Register.html">Register here</a>
-    </p>
+    <div class="card-links">
+      <a href="ForgotPassword.html">Forgot password?</a>
+      <a href="Register.html">Don't have an account? Register here</a>
+    </div>
 
     <output id="loginFeedback"></output>
   </section>
 </main>
 
 <footer>
-  <p>&copy; 2026 Municipal Portal</p>
+  <div class="footer-links">
+    <a href="#">About Us</a>
+    <span class="footer-sep">|</span>
+    <a href="#">Contact Us</a>
+    <span class="footer-sep">|</span>
+    <a href="#">Privacy Policy</a>
+    <span class="footer-sep">|</span>
+    <a href="#">Terms of Service</a>
+  </div>
 </footer>
 
 <script type="module" src="login.js"></script>
+
 </body>
 </html>

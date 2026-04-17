@@ -3,6 +3,7 @@ const cors    = require("cors");
 const path    = require("path");
 const admin   = require("firebase-admin");
 
+// For Azure: Use environment variable
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
 admin.initializeApp({
@@ -12,8 +13,9 @@ admin.initializeApp({
 const db = admin.firestore();
 
 const app = express();
+// Increase payload limit to handle base64 images (max 5MB)
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/", (req, res) => {
@@ -39,20 +41,34 @@ async function getRole(uid) {
   return doc.exists ? doc.data().role : "user";
 }
 
+// ── CREATE REQUEST (with optional image) ─────────────────────────────────────
 app.post("/api/requests", requireAuth, async (req, res) => {
-  const { category, description } = req.body;
+  const { category, description, image } = req.body;
   if (!category || !description) {
     return res.status(400).json({ error: "Category and description are required" });
   }
+  
+  // Validate image size (optional: reject if too large, e.g., > 2MB base64)
+  if (image && image.length > 2.5 * 1024 * 1024) {
+    return res.status(400).json({ error: "Image too large. Please use an image under 2MB." });
+  }
+  
   try {
-    const docRef = await db.collection("requests").add({
+    const requestData = {
       userId:      req.user.uid,
       userEmail:   req.user.email,
       category,
       description,
       status:      "pending",
       createdAt:   admin.firestore.FieldValue.serverTimestamp(),
-    });
+    };
+    
+    // Add image if provided
+    if (image && image !== "") {
+      requestData.image = image;
+    }
+    
+    const docRef = await db.collection("requests").add(requestData);
     res.status(201).json({ id: docRef.id, message: "Request submitted successfully" });
   } catch (err) {
     console.error("Error saving request:", err);
@@ -60,6 +76,7 @@ app.post("/api/requests", requireAuth, async (req, res) => {
   }
 });
 
+// ── GET REQUESTS (returns image field if exists) ─────────────────────────────
 app.get("/api/requests", requireAuth, async (req, res) => {
   try {
     const role = await getRole(req.user.uid);
@@ -71,7 +88,17 @@ app.get("/api/requests", requireAuth, async (req, res) => {
       snapshot = await db.collection("requests").where("userId", "==", req.user.uid).get();
     }
     const requests = snapshot.docs
-      .map(doc => ({ firestoreId: doc.id, ...doc.data(), createdAt: doc.data().createdAt?.toDate().toLocaleDateString("en-ZA") ?? "", _ts: doc.data().createdAt?.toMillis() ?? 0 }))
+      .map(doc => {
+        const data = doc.data();
+        return {
+          firestoreId: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate().toLocaleDateString("en-ZA") ?? "",
+          _ts: data.createdAt?.toMillis() ?? 0,
+          // Ensure image is included if it exists
+          image: data.image || null
+        };
+      })
       .sort((a, b) => b._ts - a._ts)
       .map(({ _ts, ...rest }, i) => ({ ...rest, id: i + 1 }));
     res.json(requests);
@@ -81,6 +108,7 @@ app.get("/api/requests", requireAuth, async (req, res) => {
   }
 });
 
+// ── UPDATE REQUEST STATUS ────────────────────────────────────────────────────
 app.patch("/api/requests/:id", requireAuth, async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
@@ -101,6 +129,7 @@ app.patch("/api/requests/:id", requireAuth, async (req, res) => {
   }
 });
 
+// ── GET ALL USERS (admin only) ───────────────────────────────────────────────
 app.get("/api/users", requireAuth, async (req, res) => {
   try {
     const role = await getRole(req.user.uid);
@@ -108,7 +137,11 @@ app.get("/api/users", requireAuth, async (req, res) => {
       return res.status(403).json({ error: "Forbidden – admins only" });
     }
     const snapshot = await db.collection("users").get();
-    const users = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data(), createdAt: doc.data().createdAt?.toDate().toLocaleDateString("en-ZA") ?? "" }));
+    const users = snapshot.docs.map(doc => ({ 
+      uid: doc.id, 
+      ...doc.data(), 
+      createdAt: doc.data().createdAt?.toDate().toLocaleDateString("en-ZA") ?? "" 
+    }));
     res.json(users);
   } catch (err) {
     console.error("Error loading users:", err);
@@ -116,6 +149,7 @@ app.get("/api/users", requireAuth, async (req, res) => {
   }
 });
 
+// ── UPDATE USER ROLE (admin only) ────────────────────────────────────────────
 app.patch("/api/users/:uid/role", requireAuth, async (req, res) => {
   const { uid } = req.params;
   const { role } = req.body;

@@ -19,15 +19,29 @@ let allRequests = [];
 
 // ── Auth guard — always re-check role from Firestore ─────────────────────────
 onAuthStateChanged(auth, async (user) => {
-  if (!user) { window.location.href = "Login.html"; return; }
+  // If no user is logged in, redirect to index.html (Login page)
+  if (!user) { 
+    window.location.href = "index.html"; 
+    return; 
+  }
 
   const userDoc = await getDoc(doc(db, "users", user.uid));
   const role    = userDoc.exists() ? userDoc.data().role : "user";
   localStorage.setItem("role", role);
 
-  if (role === "admin") { window.location.href = "AdminDashboard.html"; return; }
-  if (role === "user")  { window.location.href = "Dashboard.html";      return; }
-  if (role !== "worker") { window.location.href = "Login.html";         return; }
+  // Role-based redirects
+  if (role === "admin") { 
+    window.location.href = "AdminDashboard.html"; 
+    return; 
+  }
+  if (role === "user") { 
+    window.location.href = "Dashboard.html"; 
+    return; 
+  }
+  if (role !== "worker") { 
+    window.location.href = "index.html"; 
+    return; 
+  }
 
   document.getElementById("welcomeMsg").textContent = "Welcome, " + user.email;
   loadAllRequests();
@@ -39,15 +53,16 @@ async function getFreshToken() {
   return await user.getIdToken(true);
 }
 
+// ── Logout function - redirects to index.html (Login page) ───────────────────
 window.logout = async function () {
   await signOut(auth);
   localStorage.clear();
-  window.location.href = "Login.html";
+  window.location.href = "index.html";
 };
 
 async function loadAllRequests() {
   const table = document.getElementById("requestsTable");
-  table.innerHTML = "<tr><td colspan='7'>Loading…</td></tr>";
+  table.innerHTML = "<tr><td colspan='8'>Loading…络</tr>";
   try {
     const token = await getFreshToken();
     const res   = await fetch("/api/requests", {
@@ -57,30 +72,45 @@ async function loadAllRequests() {
     allRequests = await res.json();
     renderTable(allRequests);
   } catch {
-    table.innerHTML = "<tr><td colspan='7'>❌ Failed to load requests.</td></tr>";
+    table.innerHTML = "<tr><td colspan='8'>❌ Failed to load requests.络</table>";
   }
 }
 
 function renderTable(data) {
   const table = document.getElementById("requestsTable");
-  if (!data.length) { table.innerHTML = "<tr><td colspan='7'>No requests found.</td></tr>"; return; }
-  table.innerHTML = data.map(req => `
-    <tr>
-      <td>${req.id}</td>
-      <td>${req.userEmail ?? "—"}</td>
-      <td>${req.category}</td>
-      <td>${req.description}</td>
-      <td>${req.createdAt ?? "—"}</td>
-      <td><span class="badge badge-${req.status === "in-progress" ? "inprogress" : req.status}">${req.status}</span></td>
-      <td>
-        <select class="status-select" data-id="${req.firestoreId}" onchange="updateStatus(this)">
-          <option value="">Change…</option>
-          <option value="pending"     ${req.status === "pending"     ? "selected" : ""}>Pending</option>
-          <option value="in-progress" ${req.status === "in-progress" ? "selected" : ""}>In Progress</option>
-          <option value="resolved"    ${req.status === "resolved"    ? "selected" : ""}>Resolved</option>
-        </select>
-      </td>
-    </tr>`).join("");
+  if (!data.length) { 
+    table.innerHTML = "<tr><td colspan='8'>No requests found.络</tr>"; 
+    return; 
+  }
+  
+  table.innerHTML = data.map(req => {
+    const hasImage = req.image && req.image !== "" && req.image !== null;
+    const imageHtml = hasImage 
+      ? `<img src="${escapeHtml(req.image)}" class="proof-image" onclick="event.stopPropagation(); openImageModal('${escapeHtml(req.image)}')" alt="Proof image" title="Click to enlarge">`
+      : '<span class="no-image">No image</span>';
+    
+    let statusClass = req.status === "in-progress" ? "inprogress" : req.status;
+    
+    return `
+      <tr>
+        <td>${escapeHtml(req.id)}</td>
+        <td>${escapeHtml(req.userEmail ?? "—")}</td>
+        <td>${escapeHtml(req.category)}</td>
+        <td>${escapeHtml(req.description)}</td>
+        <td>${escapeHtml(req.createdAt ?? "—")}</td>
+        <td><span class="badge badge-${statusClass}">${escapeHtml(req.status)}</span></td>
+        <td class="proof-cell">${imageHtml}</td>
+        <td>
+          <select class="status-select" data-id="${escapeHtml(req.firestoreId)}" onchange="updateStatus(this)">
+            <option value="">Change…</option>
+            <option value="pending"     ${req.status === "pending"     ? "selected" : ""}>Pending</option>
+            <option value="in-progress" ${req.status === "in-progress" ? "selected" : ""}>In Progress</option>
+            <option value="resolved"    ${req.status === "resolved"    ? "selected" : ""}>Resolved</option>
+          </select>
+        </td>
+      </tr>
+    `;
+  }).join("");
 }
 
 window.filterRequests = function () {
@@ -107,3 +137,38 @@ window.updateStatus = async function (selectEl) {
     alert("❌ Failed to update status. Please try again.");
   }
 };
+
+// ── Image Modal Functions ─────────────────────────────────────────────────────
+window.openImageModal = function(imageSrc) {
+  const modal = document.getElementById("imageModal");
+  const modalImg = document.getElementById("modalImage");
+  if (modal && modalImg && imageSrc) {
+    modalImg.src = imageSrc;
+    modal.style.display = "block";
+  }
+};
+
+window.closeImageModal = function() {
+  const modal = document.getElementById("imageModal");
+  if (modal) {
+    modal.style.display = "none";
+  }
+};
+
+// Close modal with Escape key
+document.addEventListener("keydown", function(e) {
+  if (e.key === "Escape") {
+    closeImageModal();
+  }
+});
+
+// ── Helper: Escape HTML to prevent XSS ─────────────────────────────────────────
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}

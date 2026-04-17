@@ -48,6 +48,7 @@ if (loginForm) {
       localStorage.setItem("userId",    user.uid);
       localStorage.setItem("role",      role);
 
+      // Redirect based on role (all dashboards exist)
       window.location.href = ROLE_REDIRECT[role] ?? "Dashboard.html";
 
     } catch (err) {
