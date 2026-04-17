@@ -15,7 +15,7 @@ const db = admin.firestore();
 const app = express();
 // Increase payload limit to handle base64 images (max 5MB)
 app.use(cors());
-app.use(express.json({ limit: '5mb' }));
+app.use(express.json({ limit: '25mb' }));
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/", (req, res) => {
@@ -49,7 +49,7 @@ app.post("/api/requests", requireAuth, async (req, res) => {
   }
   
   // Validate image size (optional: reject if too large, e.g., > 2MB base64)
-  if (image && image.length > 2.5 * 1024 * 1024) {
+  if (image && image.length > 15 * 1024 * 1024) {
     return res.status(400).json({ error: "Image too large. Please use an image under 2MB." });
   }
   
