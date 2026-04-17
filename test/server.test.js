@@ -61,4 +61,60 @@ describe('Municipal Service Portal — Sprint 2 Tests', () => {
     expect(isValid('')).toBe(false);
   });
 
+  // ── US5: Filter & Search ──────────────────────────────────────────────
+  const SAMPLE_REPORTS = [
+    { id: 1, category: 'Pothole', description: 'Big pothole on Main St', status: 'pending'     },
+    { id: 2, category: 'Water',   description: 'Burst pipe near school', status: 'in-progress' },
+    { id: 3, category: 'Waste',   description: 'Overflowing bin',        status: 'resolved'    },
+  ];
+
+  test('filter by status returns only matching reports', () => {
+    const result = SAMPLE_REPORTS.filter(r => r.status === 'pending');
+    expect(result.length).toBe(1);
+    expect(result[0].category).toBe('Pothole');
+  });
+
+  test('filter by in-progress returns correct report', () => {
+    const result = SAMPLE_REPORTS.filter(r => r.status === 'in-progress');
+    expect(result.length).toBe(1);
+    expect(result[0].category).toBe('Water');
+  });
+
+  test('search by keyword matches description', () => {
+    const kw = 'pipe';
+    const result = SAMPLE_REPORTS.filter(r =>
+      r.description.toLowerCase().includes(kw) ||
+      r.category.toLowerCase().includes(kw)
+    );
+    expect(result.length).toBe(1);
+    expect(result[0].id).toBe(2);
+  });
+
+  test('search by keyword matches category', () => {
+    const kw = 'waste';
+    const result = SAMPLE_REPORTS.filter(r =>
+      r.description.toLowerCase().includes(kw) ||
+      r.category.toLowerCase().includes(kw)
+    );
+    expect(result.length).toBe(1);
+    expect(result[0].id).toBe(3);
+  });
+
+  test('search with no match returns empty array', () => {
+    const kw = 'earthquake';
+    const result = SAMPLE_REPORTS.filter(r =>
+      r.description.toLowerCase().includes(kw) ||
+      r.category.toLowerCase().includes(kw)
+    );
+    expect(result.length).toBe(0);
+  });
+
+  test('empty status filter returns all reports', () => {
+    const status = '';
+    const result = status
+      ? SAMPLE_REPORTS.filter(r => r.status === status)
+      : SAMPLE_REPORTS;
+    expect(result.length).toBe(3);
+  });
+
 });
