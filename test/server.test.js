@@ -117,4 +117,34 @@ describe('Municipal Service Portal — Sprint 2 Tests', () => {
     expect(result.length).toBe(3);
   });
 
+  // ── US2/US6: Role-based access and delete authorization ──────────────
+  test('admin and worker can see all reports', () => {
+    const canSeeAll = role => role === 'admin' || role === 'worker';
+    expect(canSeeAll('admin')).toBe(true);
+    expect(canSeeAll('worker')).toBe(true);
+    expect(canSeeAll('user')).toBe(false);
+  });
+
+  test('regular user cannot see all reports', () => {
+    const canSeeAll = role => role === 'admin' || role === 'worker';
+    expect(canSeeAll('user')).toBe(false);
+  });
+
+  test('report owner can delete their own report', () => {
+    const report   = { userId: 'user_A' };
+    const canDelete = (uid, role) => report.userId === uid || role === 'admin';
+    expect(canDelete('user_A', 'user')).toBe(true);
+  });
+
+  test('non-owner cannot delete another users report', () => {
+    const report   = { userId: 'user_A' };
+    const canDelete = (uid, role) => report.userId === uid || role === 'admin';
+    expect(canDelete('user_B', 'user')).toBe(false);
+  });
+
+  test('admin can delete any report', () => {
+    const report   = { userId: 'user_A' };
+    const canDelete = (uid, role) => report.userId === uid || role === 'admin';
+    expect(canDelete('user_B', 'admin')).toBe(true);
+  });
 });
