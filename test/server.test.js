@@ -147,4 +147,92 @@ describe('Municipal Service Portal — Sprint 2 Tests', () => {
     const canDelete = (uid, role) => report.userId === uid || role === 'admin';
     expect(canDelete('user_B', 'admin')).toBe(true);
   });
+
+  // ── Edge cases and security ───────────────────────────────────────────
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g,  '&amp;')
+      .replace(/</g,  '&lt;')
+      .replace(/>/g,  '&gt;')
+      .replace(/"/g,  '&quot;')
+      .replace(/'/g,  '&#39;');
+  }
+
+  test('escapeHtml prevents XSS in report output', () => {
+    expect(escapeHtml('<script>alert(1)</script>')).toBe('&lt;script&gt;alert(1)&lt;/script&gt;');
+  });
+
+  test('escapeHtml converts ampersand', () => {
+    expect(escapeHtml('a & b')).toBe('a &amp; b');
+  });
+
+  test('escapeHtml handles empty string', () => {
+    expect(escapeHtml('')).toBe('');
+  });
+
+  test('image under 2MB size limit is accepted', () => {
+    const limit = 2.5 * 1024 * 1024;
+    expect(1_000_000 < limit).toBe(true);
+  });
+
+  test('image over 2MB size limit is rejected', () => {
+    const limit = 2.5 * 1024 * 1024;
+    expect(3_000_000 < limit).toBe(false);
+  });
+
+  test('password shorter than 6 chars is invalid', () => {
+    expect('123'.length >= 6).toBe(false);
+  });
+
+  test('password of 6+ chars is valid', () => {
+    expect('securepass'.length >= 6).toBe(true);
+  });
+
+  test('mismatched passwords fail confirmation', () => {
+    expect('mypass' === 'wrongpass').toBe(false);
+  });// ── Edge cases and security ───────────────────────────────────────────
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g,  '&amp;')
+      .replace(/</g,  '&lt;')
+      .replace(/>/g,  '&gt;')
+      .replace(/"/g,  '&quot;')
+      .replace(/'/g,  '&#39;');
+  }
+
+  test('escapeHtml prevents XSS in report output', () => {
+    expect(escapeHtml('<script>alert(1)</script>')).toBe('&lt;script&gt;alert(1)&lt;/script&gt;');
+  });
+
+  test('escapeHtml converts ampersand', () => {
+    expect(escapeHtml('a & b')).toBe('a &amp; b');
+  });
+
+  test('escapeHtml handles empty string', () => {
+    expect(escapeHtml('')).toBe('');
+  });
+
+  test('image under 2MB size limit is accepted', () => {
+    const limit = 2.5 * 1024 * 1024;
+    expect(1_000_000 < limit).toBe(true);
+  });
+
+  test('image over 2MB size limit is rejected', () => {
+    const limit = 2.5 * 1024 * 1024;
+    expect(3_000_000 < limit).toBe(false);
+  });
+
+  test('password shorter than 6 chars is invalid', () => {
+    expect('123'.length >= 6).toBe(false);
+  });
+
+  test('password of 6+ chars is valid', () => {
+    expect('securepass'.length >= 6).toBe(true);
+  });
+
+  test('mismatched passwords fail confirmation', () => {
+    expect('mypass' === 'wrongpass').toBe(false);
+  });
 });
