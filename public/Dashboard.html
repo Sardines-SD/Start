@@ -293,6 +293,19 @@
       font-size: 13px;
       margin: 0;
     }
+    .btn-delete {
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .btn-delete:hover { background: #b02a37; }
+    .btn-delete:disabled { background: #aaa; cursor: not-allowed; }
+
+
   </style>
 </head>
 <body>
@@ -355,11 +368,12 @@
             <th>Status</th>
             <th>Date</th>
             <th>Proof</th>
+            <th>Action</th> //added this
           </tr>
         </thead>
         <tbody id="requestsTableBody">
           <tr class="no-requests">
-            <td colspan="6">No requests yet.</td>
+            <td colspan="7">No requests yet.</td>
           </tr>
         </tbody>
       </table>
