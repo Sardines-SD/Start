@@ -70,7 +70,6 @@ window.logout = async function () {
     window.location.href = "index.html";
   }
 };
-
 // ── Image Preview Setup ────────────────────────────────────────────────────────
 function setupImagePreview() {
   const imageInput = document.getElementById('requestImage');
@@ -214,7 +213,7 @@ document.getElementById("serviceRequestForm").addEventListener("submit", async (
 // ── Load own requests ─────────────────────────────────────────────────────────
 async function loadRequests() {
   const table = document.getElementById("requestsTableBody");
-  table.innerHTML = "<tr><td colspan='6'>Loading…</td></tr>";
+  table.innerHTML = "<tr><td colspan='7'>Loading…</td></tr>";
   
   try {
     const token = await getFreshToken();
@@ -230,7 +229,7 @@ async function loadRequests() {
     const data = await res.json();
     
     if (!data.length) { 
-      table.innerHTML = "<tr class='no-requests'><td colspan='6'>No requests yet.</td></tr>"; 
+      table.innerHTML = "<tr class='no-requests'><td colspan='7'>No requests yet.</td></tr>"; 
       return; 
     }
     
@@ -247,17 +246,63 @@ async function loadRequests() {
           <td>${escapeHtml(r.description.substring(0, 80))}${r.description.length > 80 ? '...' : ''}</td>
           <td><span class="badge badge-${getStatusClass(r.status)}">${escapeHtml(r.status)}</span></td>
           <td>${r.createdAt ? new Date(r.createdAt).toLocaleString() : ""}</td>
-          <td class="proof-cell">${imageHtml}</td>
+         <td class="proof-cell">${imageHtml}</td>
+         <td>
+            <button class="btn-delete" 
+              onclick="deleteReport('${escapeHtml(r.firestoreId)}', this)">
+              🗑 Delete
+            </button>
+          </td>//added this LS
+
         </tr>
       `;
     }).join("");
     
   } catch (error) {
     console.error("Load requests error:", error);
-    table.innerHTML = "<tr><td colspan='6'>❌ Failed to load requests.</td></tr>";
+    table.innerHTML = "<tr><td colspan='7'>❌ Failed to load requests.</td></tr>";
   }
 }
 
+//LS(2819280) ── Delete report ─────────────────────────────────────────────────────────────
+window.deleteReport = async function (firestoreId, btn) {
+  if (!firestoreId) return;
+  if (!confirm("Delete this report? This cannot be undone.")) return;
+
+  btn.disabled    = true;
+  btn.textContent = "Deleting…";
+
+  try {
+    const token = await getFreshToken();
+    const res   = await fetch(`/api/requests/${firestoreId}`, {
+      method:  "DELETE",
+      headers: { "Authorization": `Bearer ${token}` },
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      alert("❌ " + (err.error ?? "Failed to delete."));
+      btn.disabled    = false;
+      btn.textContent = "🗑 Delete";
+      return;
+    }
+
+    // Remove the row from the table instantly
+    btn.closest("tr").remove();
+
+    // If no rows left, show empty message
+    const table = document.getElementById("requestsTableBody");
+    if (!table.querySelector("tr")) {
+      table.innerHTML = 
+        "<tr class='no-requests'><td colspan='7'>No reports found.</td></tr>";
+    }
+
+  } catch {
+    alert("❌ Failed to delete. Please try again.");
+    btn.disabled    = false;
+    btn.textContent = "🗑 Delete";
+  }
+};
 // ── Helper: Get status badge class ────────────────────────────────────────────
 function getStatusClass(status) {
   const statusLower = (status || "").toLowerCase();
