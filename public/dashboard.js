@@ -252,7 +252,7 @@ async function loadRequests() {
               onclick="deleteReport('${escapeHtml(r.firestoreId)}', this)">
               🗑 Delete
             </button>
-          </td>//added this LS
+          </td>
 
         </tr>
       `;
