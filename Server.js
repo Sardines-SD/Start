@@ -47,27 +47,25 @@ app.post("/api/requests", requireAuth, async (req, res) => {
   if (!category || !description) {
     return res.status(400).json({ error: "Category and description are required" });
   }
-  
-  // Validate image size (optional: reject if too large, e.g., > 2MB base64)
+
   if (image && image.length > 15 * 1024 * 1024) {
     return res.status(400).json({ error: "Image too large. Please use an image under 2MB." });
   }
-  
+
   try {
     const requestData = {
-      userId:      req.user.uid,
-      userEmail:   req.user.email,
+      userId:    req.user.uid,
+      userEmail: req.user.email,
       category,
       description,
-      status:      "pending",
-      createdAt:   admin.firestore.FieldValue.serverTimestamp(),
+      status:    "pending",
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
     };
-    
-    // Add image if provided
+
     if (image && image !== "") {
       requestData.image = image;
     }
-    
+
     const docRef = await db.collection("requests").add(requestData);
     res.status(201).json({ id: docRef.id, message: "Request submitted successfully" });
   } catch (err) {
@@ -76,31 +74,45 @@ app.post("/api/requests", requireAuth, async (req, res) => {
   }
 });
 
-// ── GET REQUESTS (returns image field if exists) ─────────────────────────────
+// ── GET ALL REQUESTS (admin/worker sees all, user sees own) ──────────────────
 app.get("/api/requests", requireAuth, async (req, res) => {
   try {
-    const role = await getRole(req.user.uid);
+    const role      = await getRole(req.user.uid);
     const canSeeAll = role === "admin" || role === "worker";
+    const { status, search } = req.query;
     let snapshot;
+
     if (canSeeAll) {
       snapshot = await db.collection("requests").get();
     } else {
-      snapshot = await db.collection("requests").where("userId", "==", req.user.uid).get();
+      snapshot = await db.collection("requests")
+        .where("userId", "==", req.user.uid).get();
     }
-    const requests = snapshot.docs
-      .map(doc => {
-        const data = doc.data();
-        return {
-          firestoreId: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate().toLocaleDateString("en-ZA") ?? "",
-          _ts: data.createdAt?.toMillis() ?? 0,
-          // Ensure image is included if it exists
-          image: data.image || null
-        };
-      })
+
+    let requests = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        firestoreId: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate().toLocaleDateString("en-ZA") ?? "",
+        _ts:       data.createdAt?.toMillis() ?? 0,
+        image:     data.image || null,
+      };
+    });
+
+    if (status) requests = requests.filter(r => r.status === status);
+    if (search) {
+      const kw = search.toLowerCase();
+      requests  = requests.filter(r =>
+        (r.description || "").toLowerCase().includes(kw) ||
+        (r.category    || "").toLowerCase().includes(kw)
+      );
+    }
+
+    requests = requests
       .sort((a, b) => b._ts - a._ts)
       .map(({ _ts, ...rest }, i) => ({ ...rest, id: i + 1 }));
+
     res.json(requests);
   } catch (err) {
     console.error("Error loading requests:", err);
@@ -108,9 +120,47 @@ app.get("/api/requests", requireAuth, async (req, res) => {
   }
 });
 
-// ── UPDATE REQUEST STATUS ────────────────────────────────────────────────────
+// ── GET MY REQUESTS (citizen — own reports only) ──────────────────────────────
+app.get("/api/requests/my", requireAuth, async (req, res) => {
+  try {
+    const { status, search } = req.query;
+    const snapshot = await db.collection("requests")
+      .where("userId", "==", req.user.uid).get();
+
+    let requests = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        firestoreId: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate().toLocaleDateString("en-ZA") ?? "",
+        _ts:       data.createdAt?.toMillis() ?? 0,
+        image:     data.image || null,
+      };
+    });
+
+    if (status) requests = requests.filter(r => r.status === status);
+    if (search) {
+      const kw = search.toLowerCase();
+      requests  = requests.filter(r =>
+        (r.description || "").toLowerCase().includes(kw) ||
+        (r.category    || "").toLowerCase().includes(kw)
+      );
+    }
+
+    requests = requests
+      .sort((a, b) => b._ts - a._ts)
+      .map(({ _ts, ...rest }, i) => ({ ...rest, id: i + 1 }));
+
+    res.json(requests);
+  } catch (err) {
+    console.error("Error loading my requests:", err);
+    res.status(500).json({ error: "Failed to load requests" });
+  }
+});
+
+// ── UPDATE REQUEST STATUS ─────────────────────────────────────────────────────
 app.patch("/api/requests/:id", requireAuth, async (req, res) => {
-  const { id } = req.params;
+  const { id }     = req.params;
   const { status } = req.body;
   const validStatuses = ["pending", "in-progress", "resolved"];
   if (!validStatuses.includes(status)) {
@@ -129,7 +179,31 @@ app.patch("/api/requests/:id", requireAuth, async (req, res) => {
   }
 });
 
-// ── GET ALL USERS (admin only) ───────────────────────────────────────────────
+// ── DELETE REQUEST (owner or admin only) ──────────────────────────────────────
+app.delete("/api/requests/:id", requireAuth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const docRef  = db.collection("requests").doc(id);
+    const docSnap = await docRef.get();
+
+    if (!docSnap.exists) {
+      return res.status(404).json({ error: "Report not found" });
+    }
+
+    const role = await getRole(req.user.uid);
+    if (docSnap.data().userId !== req.user.uid && role !== "admin") {
+      return res.status(403).json({ error: "Forbidden – you can only delete your own reports" });
+    }
+
+    await docRef.delete();
+    res.json({ message: "Report deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting request:", err);
+    res.status(500).json({ error: "Failed to delete request" });
+  }
+});
+
+// ── GET ALL USERS (admin only) ────────────────────────────────────────────────
 app.get("/api/users", requireAuth, async (req, res) => {
   try {
     const role = await getRole(req.user.uid);
@@ -137,10 +211,10 @@ app.get("/api/users", requireAuth, async (req, res) => {
       return res.status(403).json({ error: "Forbidden – admins only" });
     }
     const snapshot = await db.collection("users").get();
-    const users = snapshot.docs.map(doc => ({ 
-      uid: doc.id, 
-      ...doc.data(), 
-      createdAt: doc.data().createdAt?.toDate().toLocaleDateString("en-ZA") ?? "" 
+    const users    = snapshot.docs.map(doc => ({
+      uid: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate().toLocaleDateString("en-ZA") ?? "",
     }));
     res.json(users);
   } catch (err) {
@@ -149,9 +223,9 @@ app.get("/api/users", requireAuth, async (req, res) => {
   }
 });
 
-// ── UPDATE USER ROLE (admin only) ────────────────────────────────────────────
+// ── UPDATE USER ROLE (admin only) ─────────────────────────────────────────────
 app.patch("/api/users/:uid/role", requireAuth, async (req, res) => {
-  const { uid } = req.params;
+  const { uid }  = req.params;
   const { role } = req.body;
   const validRoles = ["user", "worker", "admin"];
   if (!validRoles.includes(role)) {
