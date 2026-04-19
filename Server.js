@@ -74,6 +74,44 @@ app.post("/api/requests", requireAuth, async (req, res) => {
   }
 });
 
+// ── GET MY REQUESTS (citizen — own reports only) ──────────────────────────────
+app.get("/api/requests/my", requireAuth, async (req, res) => {
+  try {
+    const { status, search } = req.query;
+    const snapshot = await db.collection("requests")
+      .where("userId", "==", req.user.uid).get();
+
+    let requests = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        firestoreId: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate().toLocaleDateString("en-ZA") ?? "",
+        _ts:       data.createdAt?.toMillis() ?? 0,
+        image:     data.image || null,
+      };
+    });
+
+    if (status) requests = requests.filter(r => r.status === status);
+    if (search) {
+      const kw = search.toLowerCase();
+      requests  = requests.filter(r =>
+        (r.description || "").toLowerCase().includes(kw) ||
+        (r.category    || "").toLowerCase().includes(kw)
+      );
+    }
+
+    requests = requests
+      .sort((a, b) => b._ts - a._ts)
+      .map(({ _ts, ...rest }, i) => ({ ...rest, id: i + 1 }));
+
+    res.json(requests);
+  } catch (err) {
+    console.error("Error loading my requests:", err);
+    res.status(500).json({ error: "Failed to load requests" });
+  }
+});
+
 // ── GET ALL REQUESTS (admin/worker sees all, user sees own) ──────────────────
 app.get("/api/requests", requireAuth, async (req, res) => {
   try {
@@ -116,44 +154,6 @@ app.get("/api/requests", requireAuth, async (req, res) => {
     res.json(requests);
   } catch (err) {
     console.error("Error loading requests:", err);
-    res.status(500).json({ error: "Failed to load requests" });
-  }
-});
-
-// ── GET MY REQUESTS (citizen — own reports only) ──────────────────────────────
-app.get("/api/requests/my", requireAuth, async (req, res) => {
-  try {
-    const { status, search } = req.query;
-    const snapshot = await db.collection("requests")
-      .where("userId", "==", req.user.uid).get();
-
-    let requests = snapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        firestoreId: doc.id,
-        ...data,
-        createdAt: data.createdAt?.toDate().toLocaleDateString("en-ZA") ?? "",
-        _ts:       data.createdAt?.toMillis() ?? 0,
-        image:     data.image || null,
-      };
-    });
-
-    if (status) requests = requests.filter(r => r.status === status);
-    if (search) {
-      const kw = search.toLowerCase();
-      requests  = requests.filter(r =>
-        (r.description || "").toLowerCase().includes(kw) ||
-        (r.category    || "").toLowerCase().includes(kw)
-      );
-    }
-
-    requests = requests
-      .sort((a, b) => b._ts - a._ts)
-      .map(({ _ts, ...rest }, i) => ({ ...rest, id: i + 1 }));
-
-    res.json(requests);
-  } catch (err) {
-    console.error("Error loading my requests:", err);
     res.status(500).json({ error: "Failed to load requests" });
   }
 });
