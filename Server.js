@@ -2,6 +2,7 @@ const express = require("express");
 const cors    = require("cors");
 const path    = require("path");
 const admin   = require("firebase-admin");
+const nodemailer = require("nodemailer");
 
 // For Azure: Use environment variable
 if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
@@ -16,6 +17,75 @@ admin.initializeApp({
 });
 
 const db = admin.firestore();
+
+// ── EMAIL TRANSPORTER ─────────────────────────────────────────────────────────
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+const STATUS_LABELS = {
+  "pending":     "Pending",
+  "in-progress": "In Progress",
+  "resolved":    "Resolved",
+};
+
+const STATUS_COLOURS = {
+  "pending":     "#f59e0b",
+  "in-progress": "#3b82f6",
+  "resolved":    "#10b981",
+};
+
+async function sendStatusEmail(toEmail, report, newStatus) {
+  const label  = STATUS_LABELS[newStatus]  ?? newStatus;
+  const colour = STATUS_COLOURS[newStatus] ?? "#6b7280";
+
+  const html = `
+  <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
+    <div style="background:#1d4ed8;padding:24px 32px">
+      <h1 style="color:#fff;margin:0;font-size:22px">FixMyCity - Report Update</h1>
+    </div>
+    <div style="padding:32px">
+      <p style="color:#374151;font-size:15px">Hello,</p>
+      <p style="color:#374151;font-size:15px">Your report has been updated. Here are the details:</p>
+      <table style="width:100%;border-collapse:collapse;margin:20px 0">
+        <tr style="background:#f9fafb">
+          <td style="padding:10px 14px;font-weight:bold;color:#6b7280;width:35%">Category</td>
+          <td style="padding:10px 14px;color:#111827">${report.category}</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 14px;font-weight:bold;color:#6b7280">Description</td>
+          <td style="padding:10px 14px;color:#111827">${report.description}</td>
+        </tr>
+        <tr style="background:#f9fafb">
+          <td style="padding:10px 14px;font-weight:bold;color:#6b7280">New Status</td>
+          <td style="padding:10px 14px">
+            <span style="background:${colour};color:#fff;padding:4px 12px;border-radius:999px;font-size:13px;font-weight:600">
+              ${label}
+            </span>
+          </td>
+        </tr>
+      </table>
+      <p style="color:#6b7280;font-size:13px;margin-top:32px">
+        You are receiving this email because you submitted a report on FixMyCity.<br>
+        Please do not reply to this email.
+      </p>
+    </div>
+    <div style="background:#f3f4f6;padding:16px 32px;text-align:center">
+      <p style="color:#9ca3af;font-size:12px;margin:0">FixMyCity Municipal Portal</p>
+    </div>
+  </div>`;
+
+  await transporter.sendMail({
+    from:    process.env.EMAIL_FROM || process.env.EMAIL_USER,
+    to:      toEmail,
+    subject: `Your report status has been updated to: ${label}`,
+    html,
+  });
+}
 
 const app = express();
 app.use(cors());
@@ -175,14 +245,30 @@ app.patch("/api/requests/:id", requireAuth, async (req, res) => {
     if (role !== "admin" && role !== "worker") {
       return res.status(403).json({ error: "Forbidden – workers and admins only" });
     }
-    await db.collection("requests").doc(id).update({ status });
+
+    const docRef  = db.collection("requests").doc(id);
+    const docSnap = await docRef.get();
+
+    if (!docSnap.exists) {
+      return res.status(404).json({ error: "Report not found" });
+    }
+
+    await docRef.update({ status });
+
+    // ── Send email notification to the reporter ──────────────────────────────
+    const report = docSnap.data();
+    if (report.userEmail) {
+      sendStatusEmail(report.userEmail, report, status)
+        .then(() => console.log(`Status email sent to ${report.userEmail} [status: ${status}]`))
+        .catch(err  => console.error("Failed to send status email:", err.message));
+    }
+
     res.json({ message: "Status updated successfully" });
   } catch (err) {
     console.error("Error updating status:", err);
     res.status(500).json({ error: "Failed to update status" });
   }
 });
-
 // ── DELETE REQUEST (owner or admin only) ──────────────────────────────────────
 app.delete("/api/requests/:id", requireAuth, async (req, res) => {
   const { id } = req.params;
