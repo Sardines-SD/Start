@@ -134,7 +134,8 @@
 
     select,
     textarea,
-    input[type="file"] {
+    input[type="file"],
+    input[type="text"] {
       padding: 11px 12px;
       margin-top: 6px;
       border-radius: 8px;
@@ -155,7 +156,8 @@
 
     select:focus,
     textarea:focus,
-    input[type="file"]:focus {
+    input[type="file"]:focus,
+    input[type="text"]:focus {
       border-color: #2b5fa8;
       box-shadow: 0 0 5px rgba(43,95,168,0.3);
       outline: none;
@@ -200,6 +202,10 @@
       color: #1a2a3a;
     }
 
+    .search-box {
+      margin-bottom: 15px;
+    }
+
     /* Tables */
     table {
       width: 100%;
@@ -208,20 +214,24 @@
       overflow: hidden;
       font-size: 14px;
     }
+
     th {
       background: #2b5fa8;
       color: white;
       padding: 12px;
       text-align: left;
     }
+
     td {
       padding: 12px;
       border-bottom: 1px solid #d0dcea;
       color: #2a3a4a;
     }
+
     tr:hover td {
       background: #dde8f8;
     }
+
     .no-requests td {
       text-align: center;
       color: #6a84a0;
@@ -234,6 +244,7 @@
       font-size: 12px;
       font-weight: 700;
     }
+
     .badge-pending  { background: #fff3cd; color: #856404; }
     .badge-progress { background: #cce5ff; color: #004085; }
     .badge-resolved { background: #d4edda; color: #155724; }
@@ -246,6 +257,7 @@
       transition: transform 0.2s;
       object-fit: cover;
     }
+
     .proof-image:hover {
       transform: scale(1.05);
     }
@@ -257,11 +269,13 @@
       border-radius: 8px;
       display: none;
     }
+
     .image-preview img {
       max-width: 100%;
       max-height: 150px;
       border-radius: 6px;
     }
+
     .image-preview.show {
       display: block;
     }
@@ -278,6 +292,7 @@
       background-color: rgba(0,0,0,0.9);
       cursor: pointer;
     }
+
     .image-modal img {
       position: absolute;
       top: 50%;
@@ -287,6 +302,7 @@
       max-height: 90%;
       border-radius: 8px;
     }
+
     .image-modal .close-modal {
       position: absolute;
       top: 20px;
@@ -296,6 +312,7 @@
       font-weight: bold;
       cursor: pointer;
     }
+
     .image-modal .close-modal:hover {
       color: #bbb;
     }
@@ -305,12 +322,14 @@
       box-shadow: none;
       padding: 20px;
     }
+
     footer p {
       text-align: center;
       color: #d8e6f5;
       font-size: 13px;
       margin: 0;
     }
+
     .btn-delete {
       background: #dc3545;
       color: white;
@@ -320,6 +339,7 @@
       cursor: pointer;
       font-size: 13px;
     }
+
     .btn-delete:hover { background: #b02a37; }
     .btn-delete:disabled { background: #aaa; cursor: not-allowed; }
   </style>
@@ -377,6 +397,15 @@
 
   <section>
     <h2>My Requests</h2>
+
+    <div class="search-box">
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="Search by category or keyword..."
+      >
+    </div>
+
     <div style="overflow-x: auto;">
       <table id="requestsTable">
         <thead>
@@ -392,7 +421,7 @@
         </thead>
         <tbody id="requestsTableBody">
           <tr class="no-requests">
-            <td colspan="7">No requests yet. </td>
+            <td colspan="7">No requests yet.</td>
           </tr>
         </tbody>
       </table>
@@ -405,7 +434,6 @@
   <p>&copy; 2026 Municipal Service Delivery Portal</p>
 </footer>
 
-<!-- Image Modal for fullscreen viewing -->
 <div id="imageModal" class="image-modal" onclick="closeImageModal()">
   <span class="close-modal">&times;</span>
   <img id="modalImage" src="" alt="Full size proof image">
