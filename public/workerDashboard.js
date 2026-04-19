@@ -62,7 +62,7 @@ window.logout = async function () {
 
 async function loadAllRequests() {
   const table = document.getElementById("requestsTable");
-  table.innerHTML = "<tr><td colspan='8'>Loading…络</tr>";
+  table.innerHTML = "<tr><td colspan='8'>Loading…</tr>";
   try {
     const token = await getFreshToken();
     const res   = await fetch("/api/requests", {
@@ -72,14 +72,14 @@ async function loadAllRequests() {
     allRequests = await res.json();
     renderTable(allRequests);
   } catch {
-    table.innerHTML = "<tr><td colspan='8'>❌ Failed to load requests.络</table>";
+    table.innerHTML = "<tr><td colspan='8'>❌ Failed to load requests.</table>";
   }
 }
 
 function renderTable(data) {
   const table = document.getElementById("requestsTable");
   if (!data.length) { 
-    table.innerHTML = "<tr><td colspan='8'>No requests found.络</tr>"; 
+    table.innerHTML = "<tr><td colspan='8'>No requests found.</tr>"; 
     return; 
   }
   

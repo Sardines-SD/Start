@@ -21,9 +21,9 @@ const ROLE_REDIRECT = {
 };
 
 onAuthStateChanged(auth, async (user) => {
-  if (!user) { 
-    window.location.href = "index.html"; 
-    return; 
+  if (!user) {
+    window.location.href = "index.html";
+    return;
   }
 
   const userDoc = await getDoc(doc(db, "users", user.uid));
@@ -46,6 +46,11 @@ onAuthStateChanged(auth, async (user) => {
   document.getElementById("welcomeMsg").textContent = "Welcome, " + user.email;
   loadRequests();
   setupImagePreview();
+
+  const searchInput = document.getElementById("searchInput");
+  if (searchInput) {
+    searchInput.addEventListener("input", loadRequests);
+  }
 });
 
 async function getFreshToken() {
@@ -66,22 +71,22 @@ window.logout = async function () {
 };
 
 function setupImagePreview() {
-  const imageInput = document.getElementById('requestImage');
-  const imagePreview = document.getElementById('imagePreview');
-  const previewImg = document.getElementById('previewImg');
-  
+  const imageInput = document.getElementById("requestImage");
+  const imagePreview = document.getElementById("imagePreview");
+  const previewImg = document.getElementById("previewImg");
+
   if (imageInput && imagePreview && previewImg) {
-    imageInput.addEventListener('change', function() {
+    imageInput.addEventListener("change", function() {
       if (this.files && this.files[0]) {
         const reader = new FileReader();
         reader.onload = function(e) {
           previewImg.src = e.target.result;
-          imagePreview.classList.add('show');
+          imagePreview.classList.add("show");
         };
         reader.readAsDataURL(this.files[0]);
       } else {
-        previewImg.src = '';
-        imagePreview.classList.remove('show');
+        previewImg.src = "";
+        imagePreview.classList.remove("show");
       }
     });
   }
@@ -128,59 +133,59 @@ document.getElementById("serviceRequestForm").addEventListener("submit", async (
   const description = document.getElementById("requestDescription").value;
   const imageFile   = document.getElementById("requestImage").files[0];
   const feedback    = document.getElementById("requestFeedback");
-  
+
   if (!category || !description) {
     feedback.textContent = "Please fill in all required fields.";
     feedback.style.background = "#f8d7da";
     feedback.style.borderLeftColor = "#dc3545";
     return;
   }
-  
+
   feedback.textContent = "Submitting...";
   feedback.style.background = "#e9f2ff";
   feedback.style.borderLeftColor = "#2b5fa8";
-  
+
   try {
     const token = await getFreshToken();
     let imageBase64 = null;
-    
+
     if (imageFile) {
       imageBase64 = await imageToBase64(imageFile);
     }
-    
+
     const res = await fetch("/api/requests", {
-      method:  "POST",
-      headers: { 
-        "Content-Type": "application/json", 
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`
       },
-      body: JSON.stringify({ 
-        category, 
+      body: JSON.stringify({
+        category,
         description,
         image: imageBase64
       }),
     });
-    
-    if (!res.ok) { 
-      const err = await res.json(); 
-      feedback.textContent = err.error ?? "Failed to submit request."; 
+
+    if (!res.ok) {
+      const err = await res.json();
+      feedback.textContent = err.error ?? "Failed to submit request.";
       feedback.style.background = "#f8d7da";
       feedback.style.borderLeftColor = "#dc3545";
-      return; 
+      return;
     }
-    
+
     feedback.textContent = "Request submitted successfully!";
     feedback.style.background = "#d4edda";
     feedback.style.borderLeftColor = "#28a745";
-    
+
     document.getElementById("serviceRequestForm").reset();
-    const imagePreview = document.getElementById('imagePreview');
-    const previewImg = document.getElementById('previewImg');
-    if (imagePreview) imagePreview.classList.remove('show');
-    if (previewImg) previewImg.src = '';
-    
+    const imagePreview = document.getElementById("imagePreview");
+    const previewImg = document.getElementById("previewImg");
+    if (imagePreview) imagePreview.classList.remove("show");
+    if (previewImg) previewImg.src = "";
+
     loadRequests();
-    
+
     setTimeout(() => {
       if (feedback.textContent === "Request submitted successfully!") {
         feedback.textContent = "";
@@ -188,7 +193,7 @@ document.getElementById("serviceRequestForm").addEventListener("submit", async (
         feedback.style.borderLeftColor = "#2b5fa8";
       }
     }, 3000);
-    
+
   } catch (error) {
     console.error("Submit error:", error);
     feedback.textContent = "Failed to submit. Please try again.";
@@ -200,41 +205,49 @@ document.getElementById("serviceRequestForm").addEventListener("submit", async (
 async function loadRequests() {
   const table = document.getElementById("requestsTableBody");
   table.innerHTML = "<tr><td colspan='7'>Loading...</td></tr>";
-  
+
   try {
     const token = await getFreshToken();
-    const res   = await fetch("/api/requests", {
-      headers: { 
-        "Content-Type": "application/json", 
+    const searchValue = document.getElementById("searchInput")?.value.trim() || "";
+
+    let url = "/api/requests";
+
+    if (searchValue) {
+      url += `?search=${encodeURIComponent(searchValue)}`;
+    }
+
+    const res = await fetch(url, {
+      headers: {
+        "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`
       },
     });
-    
+
     if (!res.ok) throw new Error();
-    
+
     const data = await res.json();
-    
-    if (!data.length) { 
-      table.innerHTML = "<tr class='no-requests'><td colspan='7'>No requests yet.</td></tr>"; 
-      return; 
+
+    if (!data.length) {
+      table.innerHTML = "<tr class='no-requests'><td colspan='7'>No requests found.</td></tr>";
+      return;
     }
-    
+
     table.innerHTML = data.map(r => {
       const hasImage = r.image && r.image !== "" && r.image !== null;
-      const imageHtml = hasImage 
+      const imageHtml = hasImage
         ? `<img src="${escapeHtml(r.image)}" class="proof-image" onclick="event.stopPropagation(); openImageModal('${escapeHtml(r.image)}')" alt="Proof" title="Click to enlarge">`
         : '<span class="no-image">No image</span>';
-      
+
       return `
         <tr>
           <td>${escapeHtml(r.id)}</td>
           <td>${escapeHtml(r.category)}</td>
-          <td>${escapeHtml(r.description.substring(0, 80))}${r.description.length > 80 ? '...' : ''}</td>
+          <td>${escapeHtml(r.description.substring(0, 80))}${r.description.length > 80 ? "..." : ""}</td>
           <td><span class="badge badge-${getStatusClass(r.status)}">${escapeHtml(r.status)}</span></td>
           <td>${r.createdAt ? new Date(r.createdAt).toLocaleString() : ""}</td>
           <td class="proof-cell">${imageHtml}</td>
           <td>
-            <button class="btn-delete" 
+            <button class="btn-delete"
               onclick="deleteReport('${escapeHtml(r.firestoreId)}', this)">
               Delete
             </button>
@@ -242,7 +255,7 @@ async function loadRequests() {
         </tr>
       `;
     }).join("");
-    
+
   } catch (error) {
     console.error("Load requests error:", error);
     table.innerHTML = "<tr><td colspan='7'>Failed to load requests.</td></tr>";
