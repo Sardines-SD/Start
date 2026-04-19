@@ -128,6 +128,7 @@
       width: 100%;
       max-width: 1400px;
     }
+
     .stat-card {
       flex: 1;
       min-width: 110px;
@@ -137,12 +138,14 @@
       text-align: center;
       box-shadow: 0 8px 32px rgba(0,0,0,0.18);
     }
+
     .stat-card h3 {
       margin: 0;
       font-size: 32px;
       color: #2b5fa8;
       font-weight: 700;
     }
+
     .stat-card p {
       margin: 8px 0 0;
       font-size: 13px;
@@ -158,6 +161,7 @@
       font-size: 12px;
       font-weight: 700;
     }
+
     .badge-pending     { background: #fff3cd; color: #856404; }
     .badge-inprogress  { background: #cce5ff; color: #004085; }
     .badge-resolved    { background: #d4edda; color: #155724; }
@@ -166,7 +170,10 @@
     .badge-admin       { background: #f8d7da; color: #721c24; }
 
     /* Form elements */
-    select, .filter-bar select {
+    select,
+    input[type="text"],
+    .filter-bar select,
+    .filter-bar input[type="text"] {
       padding: 10px 12px;
       margin-top: 0;
       border-radius: 8px;
@@ -178,7 +185,8 @@
       transition: border 0.3s, box-shadow 0.3s;
     }
 
-    select:focus {
+    select:focus,
+    input[type="text"]:focus {
       border-color: #2b5fa8;
       box-shadow: 0 0 5px rgba(43,95,168,0.3);
       outline: none;
@@ -189,10 +197,18 @@
       gap: 12px;
       flex-wrap: wrap;
       margin-bottom: 20px;
+      align-items: center;
     }
+
     .filter-bar select {
       width: auto;
       min-width: 140px;
+    }
+
+    .filter-bar input[type="text"] {
+      min-width: 240px;
+      flex: 1;
+      max-width: 320px;
     }
 
     /* Tabs */
@@ -201,6 +217,7 @@
       gap: 0;
       margin-bottom: 0;
     }
+
     .tab-btn {
       padding: 12px 28px;
       background: rgba(200, 215, 235, 0.8);
@@ -212,17 +229,21 @@
       color: #2a4a6a;
       transition: all 0.2s;
     }
+
     .tab-btn.active {
       background: rgba(225, 235, 250, 0.93);
       color: #2b5fa8;
       font-weight: 700;
     }
+
     .tab-btn:hover:not(.active) {
       background: rgba(200, 215, 235, 0.9);
     }
+
     .tab-panel {
       display: none;
     }
+
     .tab-panel.active {
       display: block;
     }
@@ -235,6 +256,7 @@
       overflow: hidden;
       font-size: 14px;
     }
+
     th {
       background: #2b5fa8;
       color: white;
@@ -242,17 +264,20 @@
       text-align: left;
       font-weight: 600;
     }
+
     td {
       padding: 12px;
       border-bottom: 1px solid #d0dcea;
       color: #2a3a4a;
     }
+
     tr:hover td {
       background: #dde8f8;
     }
 
     /* Status select inside table */
-    .status-select, .role-select {
+    .status-select,
+    .role-select {
       padding: 6px 10px;
       border-radius: 6px;
       border: 1px solid #c8d4e0;
@@ -274,10 +299,12 @@
       font-weight: 600;
       transition: all 0.2s;
     }
+
     .delete-user-btn:hover {
       background: #c82333;
       transform: scale(1.02);
     }
+
     .delete-user-btn:disabled {
       background: #6c757d;
       cursor: not-allowed;
@@ -292,10 +319,12 @@
       transition: transform 0.2s;
       object-fit: cover;
     }
+
     .proof-image:hover {
       transform: scale(1.05);
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
+
     .no-image {
       color: #999;
       font-style: italic;
@@ -314,6 +343,7 @@
       background-color: rgba(0,0,0,0.9);
       cursor: pointer;
     }
+
     .image-modal img {
       position: absolute;
       top: 50%;
@@ -323,6 +353,7 @@
       max-height: 90%;
       border-radius: 8px;
     }
+
     .image-modal .close-modal {
       position: absolute;
       top: 20px;
@@ -332,6 +363,7 @@
       font-weight: bold;
       cursor: pointer;
     }
+
     .image-modal .close-modal:hover {
       color: #bbb;
     }
@@ -341,6 +373,7 @@
       box-shadow: none;
       padding: 20px;
     }
+
     footer p {
       text-align: center;
       color: #d8e6f5;
@@ -368,7 +401,6 @@
 
 <main>
 
-  <!-- Stats -->
   <div class="stats">
     <div class="stat-card"><h3 id="totalCount">-</h3><p>Total Requests</p></div>
     <div class="stat-card"><h3 id="pendingCount">-</h3><p>Pending</p></div>
@@ -377,22 +409,29 @@
     <div class="stat-card"><h3 id="userCount">-</h3><p>Registered Users</p></div>
   </div>
 
-  <!-- Tabs -->
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('requests')">All Requests</button>
     <button class="tab-btn" onclick="switchTab('users')">Manage Users</button>
   </div>
 
-  <!-- Requests tab -->
   <section class="tab-panel active" id="tab-requests">
     <h2>All Service Requests</h2>
+
     <div class="filter-bar">
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="Search by user, category, description, or status..."
+        oninput="filterRequests()"
+      >
+
       <select id="filterStatus" onchange="filterRequests()">
         <option value="">All statuses</option>
         <option value="pending">Pending</option>
         <option value="in-progress">In Progress</option>
         <option value="resolved">Resolved</option>
       </select>
+
       <select id="filterCategory" onchange="filterRequests()">
         <option value="">All categories</option>
         <option value="Pothole">Pothole</option>
@@ -401,11 +440,21 @@
         <option value="Waste">Waste</option>
       </select>
     </div>
+
     <article>
       <div style="overflow-x: auto;">
         <table>
           <thead>
-            <tr><th>ID</th><th>User</th><th>Category</th><th>Description</th><th>Date</th><th>Status</th><th>Proof</th><th>Update</th></tr>
+            <tr>
+              <th>ID</th>
+              <th>User</th>
+              <th>Category</th>
+              <th>Description</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Proof</th>
+              <th>Update</th>
+            </tr>
           </thead>
           <tbody id="requestsTable"></tbody>
         </table>
@@ -413,7 +462,6 @@
     </article>
   </section>
 
-  <!-- Users tab -->
   <section class="tab-panel" id="tab-users">
     <h2>Manage Users</h2>
     <p style="color:#4a6a8a; font-size:14px; margin-bottom:20px;">Change user roles or delete accounts. You cannot delete your own account.</p>
@@ -442,7 +490,6 @@
   <p>&copy; 2026 Municipal Service Delivery Portal</p>
 </footer>
 
-<!-- Image Modal for fullscreen viewing -->
 <div id="imageModal" class="image-modal" onclick="closeImageModal()">
   <span class="close-modal">&times;</span>
   <img id="modalImage" src="" alt="Full size proof image">
