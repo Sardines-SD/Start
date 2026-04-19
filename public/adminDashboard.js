@@ -99,15 +99,21 @@ document.addEventListener("keydown", function (e) {
 async function loadAllRequests() {
   const table = document.getElementById("requestsTable");
   table.innerHTML = "<tr><td colspan='8'>Loading...</td></tr>";
+
   try {
     const token = await getFreshToken();
     const res = await fetch("/api/requests", {
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
     });
+
     if (!res.ok) throw new Error();
+
     allRequests = await res.json();
     updateStats(allRequests);
-    renderRequestsTable(allRequests);
+    filterRequests();
   } catch {
     table.innerHTML = "<tr><td colspan='8'>Failed to load requests.</td></tr>";
   }
@@ -115,6 +121,7 @@ async function loadAllRequests() {
 
 function renderRequestsTable(data) {
   const table = document.getElementById("requestsTable");
+
   if (!data.length) {
     table.innerHTML = "<tr><td colspan='8'>No requests found.</td></tr>";
     return;
@@ -126,7 +133,7 @@ function renderRequestsTable(data) {
       ? `<img src="${escapeHtml(req.image)}" class="proof-image" onclick="event.stopPropagation(); openImageModal('${escapeHtml(req.image)}')" alt="Proof image" title="Click to enlarge">`
       : '<span class="no-image">No image</span>';
 
-    let statusClass = req.status === "in-progress" ? "inprogress" : req.status;
+    const statusClass = req.status === "in-progress" ? "inprogress" : req.status;
 
     return `
       <tr>
@@ -160,24 +167,49 @@ function updateStats(data) {
 window.filterRequests = function () {
   const s = document.getElementById("filterStatus").value;
   const c = document.getElementById("filterCategory").value;
-  renderRequestsTable(allRequests.filter(r => (!s || r.status === s) && (!c || r.category === c)));
+  const q = document.getElementById("searchInput").value.trim().toLowerCase();
+
+  const filtered = allRequests.filter(r => {
+    const matchesStatus = !s || r.status === s;
+    const matchesCategory = !c || r.category === c;
+
+    const matchesSearch =
+      !q ||
+      (r.userEmail || "").toLowerCase().includes(q) ||
+      (r.category || "").toLowerCase().includes(q) ||
+      (r.description || "").toLowerCase().includes(q) ||
+      (r.status || "").toLowerCase().includes(q);
+
+    return matchesStatus && matchesCategory && matchesSearch;
+  });
+
+  renderRequestsTable(filtered);
 };
 
 window.updateStatus = async function (selectEl) {
   const firestoreId = selectEl.dataset.id;
   const newStatus = selectEl.value;
   if (!newStatus) return;
+
   try {
     const token = await getFreshToken();
     const res = await fetch(`/api/requests/${firestoreId}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
       body: JSON.stringify({ status: newStatus }),
     });
+
     if (!res.ok) throw new Error();
-    allRequests = allRequests.map(r => r.firestoreId === firestoreId ? { ...r, status: newStatus } : r);
+
+    allRequests = allRequests.map(r =>
+      r.firestoreId === firestoreId ? { ...r, status: newStatus } : r
+    );
+
     updateStats(allRequests);
-    window.filterRequests();
+    filterRequests();
   } catch {
     alert("Failed to update status.");
   }
@@ -186,18 +218,26 @@ window.updateStatus = async function (selectEl) {
 async function loadAllUsers() {
   const table = document.getElementById("usersTable");
   table.innerHTML = "<tr><td colspan='6'>Loading...</td></tr>";
+
   try {
     const token = await getFreshToken();
     const res = await fetch("/api/users", {
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
     });
+
     if (!res.ok) throw new Error();
+
     const users = await res.json();
     document.getElementById("userCount").textContent = users.length;
+
     if (!users.length) {
       table.innerHTML = "<tr><td colspan='6'>No users found.</td></tr>";
       return;
     }
+
     table.innerHTML = users.map(u => `
       <tr>
         <td>${escapeHtml(u.username ?? "-")}</td>
@@ -228,18 +268,25 @@ window.updateRole = async function (selectEl) {
   const uid = selectEl.dataset.uid;
   const newRole = selectEl.value;
   if (!newRole) return;
+
   if (!confirm(`Change this user's role to "${newRole}"?`)) {
     selectEl.value = "";
     return;
   }
+
   try {
     const token = await getFreshToken();
     const res = await fetch(`/api/users/${uid}/role`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
       body: JSON.stringify({ role: newRole }),
     });
+
     if (!res.ok) throw new Error();
+
     alert("Role updated. The user will see the change on their next login.");
     loadAllUsers();
   } catch {
