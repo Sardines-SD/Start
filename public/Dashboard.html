@@ -56,21 +56,39 @@
       text-shadow: 0 1px 3px rgba(0,0,0,0.2);
     }
 
-    header button {
+    .header-buttons {
+      display: flex;
+      gap: 10px;
       margin-top: 8px;
+    }
+
+    header button {
       padding: 9px 22px;
       border: none;
       border-radius: 8px;
-      background: white;
-      color: #2b5fa8;
       font-weight: 700;
       font-size: 14px;
       cursor: pointer;
       transition: all 0.3s ease;
     }
 
-    header button:hover {
+    .btn-logout {
+      background: white;
+      color: #2b5fa8;
+    }
+
+    .btn-logout:hover {
       background: #e6f0ff;
+      transform: translateY(-2px);
+    }
+
+    .btn-delete {
+      background: #dc3545;
+      color: white;
+    }
+
+    .btn-delete:hover {
+      background: #c82333;
       transform: translateY(-2px);
     }
 
@@ -304,8 +322,6 @@
     }
     .btn-delete:hover { background: #b02a37; }
     .btn-delete:disabled { background: #aaa; cursor: not-allowed; }
-
-
   </style>
 </head>
 <body>
@@ -322,7 +338,10 @@
     <h1>Municipal Service Delivery<br>Reporting Portal</h1>
   </div>
   <p class="header-sub" id="welcomeMsg"></p>
-  <button onclick="logout()">Logout</button>
+  <div class="header-buttons">
+    <button class="btn-logout" onclick="logout()">Logout</button>
+    <button class="btn-delete" onclick="location.href='DeleteAccount.html'">Delete Account</button>
+  </div>
 </header>
 
 <main>
@@ -343,12 +362,12 @@
       <label for="requestDescription">Description</label>
       <textarea id="requestDescription" rows="4" placeholder="Describe the issue in detail..." required></textarea>
 
-     <label for="requestImage">Upload Proof (Image)</label>
-<input type="file" id="requestImage" accept="image/*">
-<small style="color:#e74c3c; display:block; margin-top:4px; font-size:12px;">⚠️ Please use images under 700KB </small>
-<div id="imagePreview" class="image-preview">
-  <img id="previewImg" src="" alt="Preview">
-</div>
+      <label for="requestImage">Upload Proof (Image)</label>
+      <input type="file" id="requestImage" accept="image/*">
+      <small style="color:#e74c3c; display:block; margin-top:4px; font-size:12px;">Please use images under 700KB</small>
+      <div id="imagePreview" class="image-preview">
+        <img id="previewImg" src="" alt="Preview">
+      </div>
 
       <button type="submit">Submit Request</button>
     </form>
@@ -373,7 +392,7 @@
         </thead>
         <tbody id="requestsTableBody">
           <tr class="no-requests">
-            <td colspan="7">No requests yet.</td>
+            <td colspan="7">No requests yet. </td>
           </tr>
         </tbody>
       </table>

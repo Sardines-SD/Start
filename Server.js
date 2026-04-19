@@ -4,6 +4,11 @@ const path    = require("path");
 const admin   = require("firebase-admin");
 
 // For Azure: Use environment variable
+if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
+  console.error("ERROR: FIREBASE_SERVICE_ACCOUNT environment variable is not set");
+  process.exit(1);
+}
+
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
 admin.initializeApp({
@@ -13,7 +18,6 @@ admin.initializeApp({
 const db = admin.firestore();
 
 const app = express();
-// Increase payload limit to handle base64 images (max 5MB)
 app.use(cors());
 app.use(express.json({ limit: '25mb' }));
 app.use(express.static(path.join(__dirname, "public")));
@@ -49,7 +53,7 @@ app.post("/api/requests", requireAuth, async (req, res) => {
   }
 
   if (image && image.length > 15 * 1024 * 1024) {
-    return res.status(400).json({ error: "Image too large. Please use an image under 2MB." });
+    return res.status(400).json({ error: "Image too large. Please use an image under 10MB." });
   }
 
   try {
@@ -95,9 +99,9 @@ app.get("/api/requests/my", requireAuth, async (req, res) => {
     if (status) requests = requests.filter(r => r.status === status);
     if (search) {
       const kw = search.toLowerCase();
-      requests  = requests.filter(r =>
+      requests = requests.filter(r =>
         (r.description || "").toLowerCase().includes(kw) ||
-        (r.category    || "").toLowerCase().includes(kw)
+        (r.category || "").toLowerCase().includes(kw)
       );
     }
 
@@ -141,9 +145,9 @@ app.get("/api/requests", requireAuth, async (req, res) => {
     if (status) requests = requests.filter(r => r.status === status);
     if (search) {
       const kw = search.toLowerCase();
-      requests  = requests.filter(r =>
+      requests = requests.filter(r =>
         (r.description || "").toLowerCase().includes(kw) ||
-        (r.category    || "").toLowerCase().includes(kw)
+        (r.category || "").toLowerCase().includes(kw)
       );
     }
 
@@ -241,6 +245,65 @@ app.patch("/api/users/:uid/role", requireAuth, async (req, res) => {
   } catch (err) {
     console.error("Error updating role:", err);
     res.status(500).json({ error: "Failed to update role" });
+  }
+});
+
+// ── DELETE USER (admin only, direct deletion) ────────────────────────────────
+app.delete("/api/users/:uid", requireAuth, async (req, res) => {
+  const { uid } = req.params;
+  
+  try {
+    const requesterRole = await getRole(req.user.uid);
+    if (requesterRole !== "admin") {
+      return res.status(403).json({ error: "Forbidden – admins only" });
+    }
+    
+    if (uid === req.user.uid) {
+      return res.status(400).json({ error: "You cannot delete your own account" });
+    }
+    
+    await admin.auth().deleteUser(uid);
+    
+    const userRequests = await db.collection("requests").where("userId", "==", uid).get();
+    const batch = db.batch();
+    userRequests.forEach(doc => batch.delete(doc.ref));
+    
+    const userRef = db.collection("users").doc(uid);
+    batch.delete(userRef);
+    
+    await batch.commit();
+    
+    console.log(`User ${uid} deleted by admin ${req.user.uid}`);
+    res.json({ message: "User deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting user:", err);
+    res.status(500).json({ error: "Failed to delete user: " + err.message });
+  }
+});
+
+// ── DELETE OWN ACCOUNT (User self-deletion - IMMEDIATE) ──────────────────────
+app.delete("/api/me", requireAuth, async (req, res) => {
+  const userId = req.user.uid;
+  const userEmail = req.user.email;
+  const { reason } = req.body;
+
+  try {
+    const userRequests = await db.collection("requests").where("userId", "==", userId).get();
+    const batch = db.batch();
+    userRequests.forEach(doc => batch.delete(doc.ref));
+    
+    const userRef = db.collection("users").doc(userId);
+    batch.delete(userRef);
+    
+    await batch.commit();
+    
+    await admin.auth().deleteUser(userId);
+    
+    console.log(`User ${userEmail} deleted their own account. Reason: ${reason || "Not provided"}`);
+    res.json({ message: "Account deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting own account:", err);
+    res.status(500).json({ error: "Failed to delete account: " + err.message });
   }
 });
 

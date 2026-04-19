@@ -262,6 +262,27 @@
       width: auto;
     }
 
+    /* Delete button styles */
+    .delete-user-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .delete-user-btn:hover {
+      background: #c82333;
+      transform: scale(1.02);
+    }
+    .delete-user-btn:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+    }
+
     /* Image styles */
     .proof-image {
       max-width: 60px;
@@ -349,11 +370,11 @@
 
   <!-- Stats -->
   <div class="stats">
-    <div class="stat-card"><h3 id="totalCount">—</h3><p>Total Requests</p></div>
-    <div class="stat-card"><h3 id="pendingCount">—</h3><p>Pending</p></div>
-    <div class="stat-card"><h3 id="inprogressCount">—</h3><p>In Progress</p></div>
-    <div class="stat-card"><h3 id="resolvedCount">—</h3><p>Resolved</p></div>
-    <div class="stat-card"><h3 id="userCount">—</h3><p>Registered Users</p></div>
+    <div class="stat-card"><h3 id="totalCount">-</h3><p>Total Requests</p></div>
+    <div class="stat-card"><h3 id="pendingCount">-</h3><p>Pending</p></div>
+    <div class="stat-card"><h3 id="inprogressCount">-</h3><p>In Progress</p></div>
+    <div class="stat-card"><h3 id="resolvedCount">-</h3><p>Resolved</p></div>
+    <div class="stat-card"><h3 id="userCount">-</h3><p>Registered Users</p></div>
   </div>
 
   <!-- Tabs -->
@@ -395,12 +416,19 @@
   <!-- Users tab -->
   <section class="tab-panel" id="tab-users">
     <h2>Manage Users</h2>
-    <p style="color:#4a6a8a; font-size:14px; margin-bottom:20px;">Change a user's role to promote them to worker or admin.</p>
+    <p style="color:#4a6a8a; font-size:14px; margin-bottom:20px;">Change user roles or delete accounts. You cannot delete your own account.</p>
     <article>
       <div style="overflow-x: auto;">
         <table>
           <thead>
-            <tr><th>Username</th><th>Email</th><th>Ward</th><th>Current Role</th><th>Change Role</th></tr>
+            <tr>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Ward</th>
+              <th>Current Role</th>
+              <th>Change Role</th>
+              <th>Actions</th>
+            </tr>
           </thead>
           <tbody id="usersTable"></tbody>
         </table>

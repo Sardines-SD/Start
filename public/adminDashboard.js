@@ -11,40 +11,38 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { firebaseConfig } from "./firebaseConfig.js";
 
-const app  = initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db   = getFirestore(app);
+const db = getFirestore(app);
 
 let allRequests = [];
+let currentAdminId = null;
 
-// ── Auth guard — always re-check role from Firestore ─────────────────────────
+// Auth guard - always re-check role from Firestore
 onAuthStateChanged(auth, async (user) => {
-  // If no user is logged in, redirect to Login page (index.html)
-  if (!user) { 
-    window.location.href = "index.html"; 
-    return; 
+  if (!user) {
+    window.location.href = "index.html";
+    return;
   }
 
-  // Get user role from Firestore
   const userDoc = await getDoc(doc(db, "users", user.uid));
-  const role    = userDoc.exists() ? userDoc.data().role : "user";
+  const role = userDoc.exists() ? userDoc.data().role : "user";
   localStorage.setItem("role", role);
+  currentAdminId = user.uid;
 
-  // Role-based redirects - if not admin, send to correct dashboard
-  if (role === "worker") { 
-    window.location.href = "WorkerDashboard.html"; 
-    return; 
+  if (role === "worker") {
+    window.location.href = "WorkerDashboard.html";
+    return;
   }
-  if (role === "user") { 
-    window.location.href = "Dashboard.html"; 
-    return; 
+  if (role === "user") {
+    window.location.href = "Dashboard.html";
+    return;
   }
-  if (role !== "admin") { 
-    window.location.href = "index.html"; 
-    return; 
+  if (role !== "admin") {
+    window.location.href = "index.html";
+    return;
   }
 
-  // If we get here, user is an admin - show the dashboard
   document.getElementById("welcomeMsg").textContent = "Admin: " + user.email;
   loadAllRequests();
   loadAllUsers();
@@ -56,7 +54,6 @@ async function getFreshToken() {
   return await user.getIdToken(true);
 }
 
-// ── Logout function - redirects to index.html (Login page) ───────────────────
 window.logout = async function () {
   try {
     await signOut(auth);
@@ -77,8 +74,7 @@ window.switchTab = function (tab) {
   }
 };
 
-// ── Image Modal Functions ─────────────────────────────────────────────────────
-window.openImageModal = function(imageSrc) {
+window.openImageModal = function (imageSrc) {
   const modal = document.getElementById("imageModal");
   const modalImg = document.getElementById("modalImage");
   if (modal && modalImg && imageSrc) {
@@ -87,27 +83,25 @@ window.openImageModal = function(imageSrc) {
   }
 };
 
-window.closeImageModal = function() {
+window.closeImageModal = function () {
   const modal = document.getElementById("imageModal");
   if (modal) {
     modal.style.display = "none";
   }
 };
 
-// Close modal with Escape key
-document.addEventListener("keydown", function(e) {
+document.addEventListener("keydown", function (e) {
   if (e.key === "Escape") {
     closeImageModal();
   }
 });
 
-// ── Requests ──────────────────────────────────────────────────────────────────
 async function loadAllRequests() {
   const table = document.getElementById("requestsTable");
-  table.innerHTML = "<tr><td colspan='8'>Loading…</td></tr>";
+  table.innerHTML = "<tr><td colspan='8'>Loading...</td></tr>";
   try {
     const token = await getFreshToken();
-    const res   = await fetch("/api/requests", {
+    const res = await fetch("/api/requests", {
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
     });
     if (!res.ok) throw new Error();
@@ -115,40 +109,40 @@ async function loadAllRequests() {
     updateStats(allRequests);
     renderRequestsTable(allRequests);
   } catch {
-    table.innerHTML = "<tr><td colspan='8'>❌ Failed to load requests.</td></tr>";
+    table.innerHTML = "<tr><td colspan='8'>Failed to load requests.</td></tr>";
   }
 }
 
 function renderRequestsTable(data) {
   const table = document.getElementById("requestsTable");
-  if (!data.length) { 
-    table.innerHTML = "<tr><td colspan='8'>No requests found.</td></tr>"; 
-    return; 
+  if (!data.length) {
+    table.innerHTML = "<tr><td colspan='8'>No requests found.</td></tr>";
+    return;
   }
-  
+
   table.innerHTML = data.map(req => {
     const hasImage = req.image && req.image !== "" && req.image !== null;
-    const imageHtml = hasImage 
+    const imageHtml = hasImage
       ? `<img src="${escapeHtml(req.image)}" class="proof-image" onclick="event.stopPropagation(); openImageModal('${escapeHtml(req.image)}')" alt="Proof image" title="Click to enlarge">`
       : '<span class="no-image">No image</span>';
-    
+
     let statusClass = req.status === "in-progress" ? "inprogress" : req.status;
-    
+
     return `
       <tr>
         <td>${escapeHtml(req.id)}</td>
-        <td>${escapeHtml(req.userEmail ?? "—")}</td>
+        <td>${escapeHtml(req.userEmail ?? "-")}</td>
         <td>${escapeHtml(req.category)}</td>
         <td>${escapeHtml(req.description)}</td>
-        <td>${escapeHtml(req.createdAt ?? "—")}</td>
+        <td>${escapeHtml(req.createdAt ?? "-")}</td>
         <td><span class="badge badge-${statusClass}">${escapeHtml(req.status)}</span></td>
         <td class="proof-cell">${imageHtml}</td>
         <td>
           <select class="status-select" data-id="${escapeHtml(req.firestoreId)}" onchange="updateStatus(this)">
-            <option value="">Change…</option>
-            <option value="pending"     ${req.status === "pending"     ? "selected" : ""}>Pending</option>
+            <option value="">Change...</option>
+            <option value="pending" ${req.status === "pending" ? "selected" : ""}>Pending</option>
             <option value="in-progress" ${req.status === "in-progress" ? "selected" : ""}>In Progress</option>
-            <option value="resolved"    ${req.status === "resolved"    ? "selected" : ""}>Resolved</option>
+            <option value="resolved" ${req.status === "resolved" ? "selected" : ""}>Resolved</option>
           </select>
         </td>
       </tr>
@@ -157,10 +151,10 @@ function renderRequestsTable(data) {
 }
 
 function updateStats(data) {
-  document.getElementById("totalCount").textContent      = data.length;
-  document.getElementById("pendingCount").textContent    = data.filter(r => r.status === "pending").length;
+  document.getElementById("totalCount").textContent = data.length;
+  document.getElementById("pendingCount").textContent = data.filter(r => r.status === "pending").length;
   document.getElementById("inprogressCount").textContent = data.filter(r => r.status === "in-progress").length;
-  document.getElementById("resolvedCount").textContent   = data.filter(r => r.status === "resolved").length;
+  document.getElementById("resolvedCount").textContent = data.filter(r => r.status === "resolved").length;
 }
 
 window.filterRequests = function () {
@@ -171,85 +165,128 @@ window.filterRequests = function () {
 
 window.updateStatus = async function (selectEl) {
   const firestoreId = selectEl.dataset.id;
-  const newStatus   = selectEl.value;
+  const newStatus = selectEl.value;
   if (!newStatus) return;
   try {
     const token = await getFreshToken();
-    const res   = await fetch(`/api/requests/${firestoreId}`, {
-      method:  "PATCH",
+    const res = await fetch(`/api/requests/${firestoreId}`, {
+      method: "PATCH",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-      body:    JSON.stringify({ status: newStatus }),
+      body: JSON.stringify({ status: newStatus }),
     });
     if (!res.ok) throw new Error();
     allRequests = allRequests.map(r => r.firestoreId === firestoreId ? { ...r, status: newStatus } : r);
     updateStats(allRequests);
     window.filterRequests();
   } catch {
-    alert("❌ Failed to update status.");
+    alert("Failed to update status.");
   }
 };
 
-// ── Users ─────────────────────────────────────────────────────────────────────
 async function loadAllUsers() {
   const table = document.getElementById("usersTable");
-  table.innerHTML = "<tr><td colspan='5'>Loading…</td></tr>";
+  table.innerHTML = "<tr><td colspan='6'>Loading...</td></tr>";
   try {
     const token = await getFreshToken();
-    const res   = await fetch("/api/users", {
+    const res = await fetch("/api/users", {
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
     });
     if (!res.ok) throw new Error();
     const users = await res.json();
     document.getElementById("userCount").textContent = users.length;
-    if (!users.length) { 
-      table.innerHTML = "<tr><td colspan='5'>No users found.</td></tr>"; 
-      return; 
+    if (!users.length) {
+      table.innerHTML = "<tr><td colspan='6'>No users found.</td></tr>";
+      return;
     }
     table.innerHTML = users.map(u => `
       <tr>
-        <td>${escapeHtml(u.username ?? "—")}</td>
+        <td>${escapeHtml(u.username ?? "-")}</td>
         <td>${escapeHtml(u.email)}</td>
-        <td>${escapeHtml(u.ward ?? "—")}</td>
+        <td>${escapeHtml(u.ward ?? "-")}</td>
         <td><span class="badge badge-${escapeHtml(u.role)}">${escapeHtml(u.role)}</span></td>
         <td>
           <select class="role-select" data-uid="${escapeHtml(u.uid)}" onchange="updateRole(this)">
-            <option value="">Change…</option>
-            <option value="user"   ${u.role === "user"   ? "selected" : ""}>User</option>
+            <option value="">Change...</option>
+            <option value="user" ${u.role === "user" ? "selected" : ""}>User</option>
             <option value="worker" ${u.role === "worker" ? "selected" : ""}>Municipal Worker</option>
-            <option value="admin"  ${u.role === "admin"  ? "selected" : ""}>Admin</option>
+            <option value="admin" ${u.role === "admin" ? "selected" : ""}>Admin</option>
           </select>
+        </td>
+        <td>
+          <button class="delete-user-btn" onclick="deleteUserDirect('${escapeHtml(u.uid)}', '${escapeHtml(u.email)}')" ${u.uid === currentAdminId ? 'disabled' : ''}>
+            ${u.uid === currentAdminId ? 'Cannot delete self' : 'Delete'}
+          </button>
         </td>
       </tr>
     `).join("");
   } catch {
-    table.innerHTML = "<tr><td colspan='5'>❌ Failed to load users.</td></tr>";
+    table.innerHTML = "<tr><td colspan='6'>Failed to load users.</td></tr>";
   }
 }
 
 window.updateRole = async function (selectEl) {
-  const uid     = selectEl.dataset.uid;
+  const uid = selectEl.dataset.uid;
   const newRole = selectEl.value;
   if (!newRole) return;
-  if (!confirm(`Change this user's role to "${newRole}"?`)) { 
-    selectEl.value = ""; 
-    return; 
+  if (!confirm(`Change this user's role to "${newRole}"?`)) {
+    selectEl.value = "";
+    return;
   }
   try {
     const token = await getFreshToken();
-    const res   = await fetch(`/api/users/${uid}/role`, {
-      method:  "PATCH",
+    const res = await fetch(`/api/users/${uid}/role`, {
+      method: "PATCH",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-      body:    JSON.stringify({ role: newRole }),
+      body: JSON.stringify({ role: newRole }),
     });
     if (!res.ok) throw new Error();
-    alert("✅ Role updated. The user will see the change on their next login.");
+    alert("Role updated. The user will see the change on their next login.");
     loadAllUsers();
   } catch {
-    alert("❌ Failed to update role.");
+    alert("Failed to update role.");
   }
 };
 
-// ── Helper: Escape HTML to prevent XSS ─────────────────────────────────────────
+window.deleteUserDirect = async function (uid, email) {
+  if (uid === currentAdminId) {
+    alert("You cannot delete your own account.");
+    return;
+  }
+
+  if (!confirm(`WARNING: Are you sure you want to permanently delete user "${email}"? This action CANNOT be undone!`)) {
+    return;
+  }
+
+  const passwordConfirm = prompt(`Type "DELETE" to confirm deletion of ${email}:`);
+  if (passwordConfirm !== "DELETE") {
+    alert("Deletion cancelled. Type DELETE to confirm.");
+    return;
+  }
+
+  try {
+    const token = await getFreshToken();
+    const res = await fetch(`/api/users/${uid}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Delete failed");
+    }
+
+    alert(`User "${email}" has been permanently deleted.`);
+    loadAllUsers();
+    loadAllRequests();
+  } catch (error) {
+    console.error("Delete error:", error);
+    alert("Failed to delete user: " + error.message);
+  }
+};
+
 function escapeHtml(str) {
   if (!str) return "";
   return String(str)

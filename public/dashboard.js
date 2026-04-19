@@ -20,20 +20,16 @@ const ROLE_REDIRECT = {
   worker: "WorkerDashboard.html",
 };
 
-// ── Auth guard — always re-check role from Firestore ─────────────────────────
 onAuthStateChanged(auth, async (user) => {
-  // If no user is logged in, redirect to index.html (Login page)
   if (!user) { 
     window.location.href = "index.html"; 
     return; 
   }
 
-  // Always read fresh role from Firestore — catches role changes made externally
   const userDoc = await getDoc(doc(db, "users", user.uid));
   const role    = userDoc.exists() ? userDoc.data().role : "user";
-  localStorage.setItem("role", role); // keep localStorage in sync
+  localStorage.setItem("role", role);
 
-  // Role-based redirects - if not regular user, send to correct dashboard
   if (role === "admin") {
     window.location.href = "AdminDashboard.html";
     return;
@@ -47,7 +43,6 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  // If we get here, user is a regular user - show the dashboard
   document.getElementById("welcomeMsg").textContent = "Welcome, " + user.email;
   loadRequests();
   setupImagePreview();
@@ -59,7 +54,6 @@ async function getFreshToken() {
   return await user.getIdToken(true);
 }
 
-// ── Logout function - redirects to index.html (Login page) ───────────────────
 window.logout = async function () {
   try {
     await signOut(auth);
@@ -70,7 +64,7 @@ window.logout = async function () {
     window.location.href = "index.html";
   }
 };
-// ── Image Preview Setup ────────────────────────────────────────────────────────
+
 function setupImagePreview() {
   const imageInput = document.getElementById('requestImage');
   const imagePreview = document.getElementById('imagePreview');
@@ -93,7 +87,6 @@ function setupImagePreview() {
   }
 }
 
-// ── Image Modal Functions ─────────────────────────────────────────────────────
 window.openImageModal = function(imageSrc) {
   const modal = document.getElementById("imageModal");
   const modalImg = document.getElementById("modalImage");
@@ -110,14 +103,12 @@ window.closeImageModal = function() {
   }
 };
 
-// Close modal with Escape key
 document.addEventListener("keydown", function(e) {
   if (e.key === "Escape") {
     closeImageModal();
   }
 });
 
-// ── Convert image to base64 ────────────────────────────────────────────────────
 function imageToBase64(file) {
   return new Promise((resolve, reject) => {
     if (!file) {
@@ -131,7 +122,6 @@ function imageToBase64(file) {
   });
 }
 
-// ── Submit request with image ─────────────────────────────────────────────────
 document.getElementById("serviceRequestForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const category    = document.getElementById("requestCategory").value;
@@ -140,7 +130,7 @@ document.getElementById("serviceRequestForm").addEventListener("submit", async (
   const feedback    = document.getElementById("requestFeedback");
   
   if (!category || !description) {
-    feedback.textContent = "❌ Please fill in all required fields.";
+    feedback.textContent = "Please fill in all required fields.";
     feedback.style.background = "#f8d7da";
     feedback.style.borderLeftColor = "#dc3545";
     return;
@@ -154,7 +144,6 @@ document.getElementById("serviceRequestForm").addEventListener("submit", async (
     const token = await getFreshToken();
     let imageBase64 = null;
     
-    // Convert image to base64 if one was selected
     if (imageFile) {
       imageBase64 = await imageToBase64(imageFile);
     }
@@ -174,17 +163,16 @@ document.getElementById("serviceRequestForm").addEventListener("submit", async (
     
     if (!res.ok) { 
       const err = await res.json(); 
-      feedback.textContent = "❌ " + (err.error ?? "Failed to submit request."); 
+      feedback.textContent = err.error ?? "Failed to submit request."; 
       feedback.style.background = "#f8d7da";
       feedback.style.borderLeftColor = "#dc3545";
       return; 
     }
     
-    feedback.textContent = "✅ Request submitted successfully!";
+    feedback.textContent = "Request submitted successfully!";
     feedback.style.background = "#d4edda";
     feedback.style.borderLeftColor = "#28a745";
     
-    // Reset form
     document.getElementById("serviceRequestForm").reset();
     const imagePreview = document.getElementById('imagePreview');
     const previewImg = document.getElementById('previewImg');
@@ -193,9 +181,8 @@ document.getElementById("serviceRequestForm").addEventListener("submit", async (
     
     loadRequests();
     
-    // Clear feedback after 3 seconds
     setTimeout(() => {
-      if (feedback.textContent === "✅ Request submitted successfully!") {
+      if (feedback.textContent === "Request submitted successfully!") {
         feedback.textContent = "";
         feedback.style.background = "#e9f2ff";
         feedback.style.borderLeftColor = "#2b5fa8";
@@ -204,16 +191,15 @@ document.getElementById("serviceRequestForm").addEventListener("submit", async (
     
   } catch (error) {
     console.error("Submit error:", error);
-    feedback.textContent = "❌ Failed to submit. Please try again.";
+    feedback.textContent = "Failed to submit. Please try again.";
     feedback.style.background = "#f8d7da";
     feedback.style.borderLeftColor = "#dc3545";
   }
 });
 
-// ── Load own requests ─────────────────────────────────────────────────────────
 async function loadRequests() {
   const table = document.getElementById("requestsTableBody");
-  table.innerHTML = "<tr><td colspan='7'>Loading…</td></tr>";
+  table.innerHTML = "<tr><td colspan='7'>Loading...</td></tr>";
   
   try {
     const token = await getFreshToken();
@@ -246,64 +232,59 @@ async function loadRequests() {
           <td>${escapeHtml(r.description.substring(0, 80))}${r.description.length > 80 ? '...' : ''}</td>
           <td><span class="badge badge-${getStatusClass(r.status)}">${escapeHtml(r.status)}</span></td>
           <td>${r.createdAt ? new Date(r.createdAt).toLocaleString() : ""}</td>
-         <td class="proof-cell">${imageHtml}</td>
-         <td>
+          <td class="proof-cell">${imageHtml}</td>
+          <td>
             <button class="btn-delete" 
               onclick="deleteReport('${escapeHtml(r.firestoreId)}', this)">
-              🗑 Delete
+              Delete
             </button>
           </td>
-
         </tr>
       `;
     }).join("");
     
   } catch (error) {
     console.error("Load requests error:", error);
-    table.innerHTML = "<tr><td colspan='7'>❌ Failed to load requests.</td></tr>";
+    table.innerHTML = "<tr><td colspan='7'>Failed to load requests.</td></tr>";
   }
 }
 
-//LS(2819280) ── Delete report ─────────────────────────────────────────────────────────────
 window.deleteReport = async function (firestoreId, btn) {
   if (!firestoreId) return;
   if (!confirm("Delete this report? This cannot be undone.")) return;
 
-  btn.disabled    = true;
-  btn.textContent = "Deleting…";
+  btn.disabled = true;
+  btn.textContent = "Deleting...";
 
   try {
     const token = await getFreshToken();
-    const res   = await fetch(`/api/requests/${firestoreId}`, {
-      method:  "DELETE",
+    const res = await fetch(`/api/requests/${firestoreId}`, {
+      method: "DELETE",
       headers: { "Authorization": `Bearer ${token}` },
     });
 
     if (!res.ok) {
       const err = await res.json();
-      alert("❌ " + (err.error ?? "Failed to delete."));
-      btn.disabled    = false;
-      btn.textContent = "🗑 Delete";
+      alert(err.error ?? "Failed to delete.");
+      btn.disabled = false;
+      btn.textContent = "Delete";
       return;
     }
 
-    // Remove the row from the table instantly
     btn.closest("tr").remove();
 
-    // If no rows left, show empty message
     const table = document.getElementById("requestsTableBody");
     if (!table.querySelector("tr")) {
-      table.innerHTML = 
-        "<tr class='no-requests'><td colspan='7'>No reports found.</td></tr>";
+      table.innerHTML = "<tr class='no-requests'><td colspan='7'>No reports found.</td></tr>";
     }
 
   } catch {
-    alert("❌ Failed to delete. Please try again.");
-    btn.disabled    = false;
-    btn.textContent = "🗑 Delete";
+    alert("Failed to delete. Please try again.");
+    btn.disabled = false;
+    btn.textContent = "Delete";
   }
 };
-// ── Helper: Get status badge class ────────────────────────────────────────────
+
 function getStatusClass(status) {
   const statusLower = (status || "").toLowerCase();
   if (statusLower === "pending") return "pending";
@@ -312,7 +293,6 @@ function getStatusClass(status) {
   return "pending";
 }
 
-// ── Helper: Escape HTML to prevent XSS ─────────────────────────────────────────
 function escapeHtml(str) {
   if (!str) return "";
   return String(str)
