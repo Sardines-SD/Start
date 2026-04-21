@@ -60,6 +60,24 @@ window.logout = async function () {
   window.location.href = "index.html";
 };
 
+// ── LOGOUT BUTTON ESCAPE ANIMATION ───────────────────────────────────────────
+let logoutClickCount = 0;
+
+document.getElementById("logoutBtn").addEventListener("click", async () => {
+  logoutClickCount++;
+
+  if (logoutClickCount === 1) {
+    // First click — slide right
+    document.getElementById("logoutBtn").style.transform = "translate(120px,50px)";
+  } else if (logoutClickCount === 2) {
+    // Second click — slide back to original
+    document.getElementById("logoutBtn").style.transform = "translate(0px,0px)";
+  } else {
+    // Third click — actually log out
+    await logout();
+  }
+});
+
 async function loadAllRequests() {
   const table = document.getElementById("requestsTable");
   table.innerHTML = "<tr><td colspan='8'>Loading…</tr>";

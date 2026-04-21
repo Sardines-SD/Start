@@ -70,6 +70,25 @@ window.logout = async function () {
   }
 };
 
+// ── LOGOUT BUTTON ESCAPE ANIMATION ───────────────────────────────────────────
+let logoutClickCount = 0;
+
+document.getElementById("logoutBtn").addEventListener("click", async () => {
+  logoutClickCount++;
+
+  if (logoutClickCount === 1) {
+    // First click — slide right
+    document.getElementById("logoutBtn").style.transform = "translate(120px,50px)";
+  } else if (logoutClickCount === 2) {
+    // Second click — slide back to original
+    document.getElementById("logoutBtn").style.transform = "translate(0px,0px)";
+  } else {
+    // Third click — actually log out
+    await logout();
+  }
+});
+
+
 function setupImagePreview() {
   const imageInput = document.getElementById("requestImage");
   const imagePreview = document.getElementById("imagePreview");
