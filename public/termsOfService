@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terms of Service - Municipal Service Portal</title>
+  <link rel="stylesheet" href="styler.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a2a3a 0%, #2b5fa8 100%);
+      color: #fff;
+    }
+
+    .terms-header {
+      background: rgba(0,0,0,0.3);
+      padding: 60px 20px;
+      text-align: center;
+    }
+
+    .terms-header h1 {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .terms-card {
+      background: rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 40px;
+      backdrop-filter: blur(10px);
+    }
+
+    .terms-card h2 {
+      color: #ffd700;
+      margin: 30px 0 15px 0;
+      font-size: 24px;
+    }
+
+    .terms-card h2:first-of-type {
+      margin-top: 0;
+    }
+
+    .terms-card p {
+      line-height: 1.6;
+      margin-bottom: 15px;
+      opacity: 0.95;
+    }
+
+    .terms-card ul {
+      margin: 15px 0 15px 30px;
+      line-height: 1.6;
+    }
+
+    .terms-card li {
+      margin-bottom: 8px;
+    }
+
+    .effective-date {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+      font-size: 14px;
+      text-align: center;
+      opacity: 0.7;
+    }
+
+    .back-btn {
+      display: inline-block;
+      margin-top: 30px;
+      padding: 10px 25px;
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+      text-decoration: none;
+      border-radius: 30px;
+      transition: all 0.3s ease;
+    }
+
+    .back-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    footer {
+      text-align: center;
+      padding: 30px;
+      background: rgba(0,0,0,0.3);
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+  <div class="terms-header">
+    <h1>Terms of Service</h1>
+    <p>Please read these terms carefully before using our service.</p>
+  </div>
+
+  <div class="container">
+    <div class="terms-card">
+      <h2>1. Acceptance of Terms</h2>
+      <p>By accessing or using the Municipal Service Portal, you agree to be bound by these Terms of Service. If you disagree with any part, please do not use our service.</p>
+
+      <h2>2. Description of Service</h2>
+      <p>The Municipal Service Portal allows citizens to:</p>
+      <ul>
+        <li>Report municipal issues (potholes, water issues, electricity problems, waste management).</li>
+        <li>Upload photo evidence of reported issues.</li>
+        <li>Track the status of submitted requests.</li>
+        <li>Receive updates from municipal workers.</li>
+      </ul>
+
+      <h2>3. User Accounts</h2>
+      <p>To use our service, you must:</p>
+      <ul>
+        <li>Provide accurate and complete registration information.</li>
+        <li>Keep your login credentials confidential.</li>
+        <li>Notify us immediately of any unauthorized account access.</li>
+        <li>Be at least 18 years old to create an account.</li>
+      </ul>
+
+      <h2>4. User Conduct</h2>
+      <p>You agree NOT to:</p>
+      <ul>
+        <li>Submit false, misleading, or abusive reports.</li>
+        <li>Upload inappropriate, offensive, or illegal content.</li>
+        <li>Impersonate another person or entity.</li>
+        <li>Attempt to hack, disrupt, or overload our servers.</li>
+        <li>Use the service for any illegal purpose.</li>
+      </ul>
+
+      <h2>5. Content Ownership</h2>
+      <p>You retain ownership of the content you submit. By submitting content, you grant the municipality permission to use it for processing your request and improving services. We do not claim ownership of your images or descriptions.</p>
+
+      <h2>6. Account Deletion</h2>
+      <p>You may delete your account at any time through the dashboard. This will permanently remove your personal information and all associated requests. Admins may also delete accounts for violating these terms.</p>
+
+      <h2>7. Limitation of Liability</h2>
+      <p>The Municipal Service Portal is provided "as is" without warranties. We are not liable for:</p>
+      <ul>
+        <li>Delays in processing requests.</li>
+        <li>Technical issues or downtime.</li>
+        <li>Actions taken by municipal workers based on reports.</li>
+      </ul>
+
+      <h2>8. Modification of Terms</h2>
+      <p>We reserve the right to update these terms at any time. Continued use of the service after changes constitutes acceptance of the new terms.</p>
+
+      <h2>9. Termination</h2>
+      <p>We may suspend or terminate your account if you violate these terms. You may also delete your account voluntarily at any time.</p>
+
+      <h2>10. Governing Law</h2>
+      <p>These terms are governed by the laws of South Africa. Any disputes shall be resolved in the courts of Johannesburg.</p>
+
+      <div class="effective-date">
+        Effective Date: April 19, 2026
+      </div>
+
+      <div style="text-align:center;">
+        <a href="index.html" class="back-btn">← Back to Login</a>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2026 Municipal Service Delivery Portal | Terms of Service</p>
+  </footer>
+</body>
+</html>

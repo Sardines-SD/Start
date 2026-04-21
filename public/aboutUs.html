@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About Us - Municipal Service Portal</title>
+  <link rel="stylesheet" href="styler.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a2a3a 0%, #2b5fa8 100%);
+      color: #fff;
+    }
+
+    .about-header {
+      background: rgba(0,0,0,0.3);
+      padding: 60px 20px;
+      text-align: center;
+    }
+
+    .about-header h1 {
+      font-size: 48px;
+      margin-bottom: 20px;
+      animation: fadeInDown 0.8s ease;
+    }
+
+    .about-header p {
+      font-size: 18px;
+      max-width: 600px;
+      margin: 0 auto;
+      opacity: 0.9;
+      animation: fadeInUp 0.8s ease;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .mission-section {
+      background: rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 40px;
+      margin-bottom: 40px;
+      backdrop-filter: blur(10px);
+      text-align: center;
+    }
+
+    .mission-section h2 {
+      font-size: 32px;
+      margin-bottom: 20px;
+      color: #ffd700;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 30px;
+      margin: 40px 0;
+    }
+
+    .feature-card {
+      background: rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      cursor: pointer;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-10px);
+      background: rgba(255,255,255,0.2);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+
+    .feature-icon {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+
+    .feature-card h3 {
+      font-size: 22px;
+      margin-bottom: 15px;
+      color: #ffd700;
+    }
+
+    .team-section {
+      text-align: center;
+      margin-top: 60px;
+    }
+
+    .team-section h2 {
+      font-size: 32px;
+      margin-bottom: 30px;
+    }
+
+    .back-btn {
+      display: inline-block;
+      margin-top: 40px;
+      padding: 12px 30px;
+      background: #ffd700;
+      color: #1a2a3a;
+      text-decoration: none;
+      border-radius: 30px;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+
+    .back-btn:hover {
+      background: #fff;
+      transform: scale(1.05);
+    }
+
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    footer {
+      text-align: center;
+      padding: 30px;
+      background: rgba(0,0,0,0.3);
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+  <div class="about-header">
+    <h1>About Municipal Service Portal</h1>
+    <p>Bridging the gap between citizens and municipal services</p>
+  </div>
+
+  <div class="container">
+    <div class="mission-section">
+      <h2>Our Mission</h2>
+      <p>To empower every citizen with a simple, transparent, and efficient way to report and track municipal issues in their community. We believe that great cities are built on great communication between residents and local government.</p>
+    </div>
+
+    <h2 style="text-align:center; margin-bottom:20px;">What We Offer</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">📱</div>
+        <h3>Easy Reporting</h3>
+        <p>Submit service requests in seconds with optional photo proof</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔍</div>
+        <h3>Real-time Tracking</h3>
+        <p>Track the status of your requests from pending to resolved</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">👥</div>
+        <h3>Community Impact</h3>
+        <p>See what issues your neighbors are reporting</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3>Fast Response</h3>
+        <p>Municipal workers get notified instantly</p>
+      </div>
+    </div>
+
+    <div class="team-section">
+      <h2>Built With ❤️ for Our Community</h2>
+      <p style="max-width:600px; margin:0 auto;">This platform was developed to make municipal services more accessible, transparent, and responsive to the needs of every citizen.</p>
+      <a href="index.html" class="back-btn">← Back to Login</a>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2026 Municipal Service Delivery Portal | Together for a Better Community</p>
+  </footer>
+</body>
+</html>
