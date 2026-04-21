@@ -20,6 +20,56 @@ const ROLE_REDIRECT = {
   worker: "WorkerDashboard.html",
 };
 
+//popup message for when an image is too large
+
+function showErrorPopup(message) {
+  const overlay = document.createElement('div');
+  overlay.style.position = 'fixed';
+  overlay.style.top = '0';
+  overlay.style.left = '0';
+  overlay.style.width = '100%';
+  overlay.style.height = '100%';
+  overlay.style.backgroundColor = 'rgba(0,0,0,0.5)';
+  overlay.style.zIndex = '9999';
+  overlay.style.display = 'flex';
+  overlay.style.alignItems = 'center';
+  overlay.style.justifyContent = 'center';
+  
+  const popup = document.createElement('div');
+  popup.style.backgroundColor = 'white';
+  popup.style.borderRadius = '12px';
+  popup.style.padding = '24px';
+  popup.style.maxWidth = '400px';
+  popup.style.textAlign = 'center';
+  popup.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)';
+  
+  const messageEl = document.createElement('p');
+  messageEl.textContent = message;
+  messageEl.style.margin = '0 0 20px 0';
+  messageEl.style.fontSize = '16px';
+  messageEl.style.color = '#333';
+  
+  const okBtn = document.createElement('button');
+  okBtn.textContent = 'OK';
+  okBtn.style.backgroundColor = '#2b5fa8';
+  okBtn.style.color = 'white';
+  okBtn.style.border = 'none';
+  okBtn.style.padding = '10px 24px';
+  okBtn.style.borderRadius = '8px';
+  okBtn.style.fontSize = '14px';
+  okBtn.style.fontWeight = 'bold';
+  okBtn.style.cursor = 'pointer';
+  
+  okBtn.onclick = () => {
+    document.body.removeChild(overlay);
+  };
+  
+  popup.appendChild(messageEl);
+  popup.appendChild(okBtn);
+  overlay.appendChild(popup);
+  document.body.appendChild(overlay);
+}
+
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.href = "index.html";
@@ -70,24 +120,49 @@ window.logout = async function () {
   }
 };
 
-// ── LOGOUT BUTTON ESCAPE ANIMATION ───────────────────────────────────────────
-let logoutClickCount = 0;
-
-document.getElementById("logoutBtn").addEventListener("click", async () => {
-  logoutClickCount++;
-
-  if (logoutClickCount === 1) {
-    // First click — slide right
-    document.getElementById("logoutBtn").style.transform = "translate(120px,50px)";
-  } else if (logoutClickCount === 2) {
-    // Second click — slide back to original
-    document.getElementById("logoutBtn").style.transform = "translate(0px,0px)";
-  } else {
-    // Third click — actually log out
-    await logout();
-  }
-});
-
+// like the function says, it compresses the image since Firebase limits us to 1MB
+function compressImage(file, maxWidth = 1024, quality = 0.7) {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      resolve(null);
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        let currentQuality = quality;
+        let compressed = canvas.toDataURL('image/jpeg', currentQuality);
+        
+        while (compressed.length > 900 * 1024 && currentQuality > 0.3) {
+          currentQuality -= 0.1;
+          compressed = canvas.toDataURL('image/jpeg', currentQuality);
+        }
+        
+        resolve(compressed);
+      };
+      img.onerror = reject;
+    };
+    reader.onerror = reject;
+  });
+}
 
 function setupImagePreview() {
   const imageInput = document.getElementById("requestImage");
@@ -133,25 +208,15 @@ document.addEventListener("keydown", function(e) {
   }
 });
 
-function imageToBase64(file) {
-  return new Promise((resolve, reject) => {
-    if (!file) {
-      resolve(null);
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
 document.getElementById("serviceRequestForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const category    = document.getElementById("requestCategory").value;
   const description = document.getElementById("requestDescription").value;
   const imageFile   = document.getElementById("requestImage").files[0];
   const feedback    = document.getElementById("requestFeedback");
+  const fileInput   = document.getElementById("requestImage");
+  const imagePreview = document.getElementById("imagePreview");
+  const previewImg = document.getElementById("previewImg");
 
   if (!category || !description) {
     feedback.textContent = "Please fill in all required fields.";
@@ -169,7 +234,21 @@ document.getElementById("serviceRequestForm").addEventListener("submit", async (
     let imageBase64 = null;
 
     if (imageFile) {
-      imageBase64 = await imageToBase64(imageFile);
+      try {
+        imageBase64 = await compressImage(imageFile, 1024, 0.7);
+        
+        if (imageBase64 && imageBase64.length > 1.4 * 1024 * 1024) {
+          throw new Error("Image too large even after compression");
+        }
+      } catch (compressError) {
+        fileInput.value = '';
+        if (imagePreview) imagePreview.classList.remove('show');
+        if (previewImg) previewImg.src = '';
+        
+        showErrorPopup("Your image is too large. Please use a smaller image.");
+        feedback.textContent = "";
+        return;
+      }
     }
 
     const res = await fetch("/api/requests", {
@@ -187,6 +266,17 @@ document.getElementById("serviceRequestForm").addEventListener("submit", async (
 
     if (!res.ok) {
       const err = await res.json();
+      
+      if (err.error && err.error.includes("Image too large")) {
+        fileInput.value = '';
+        if (imagePreview) imagePreview.classList.remove('show');
+        if (previewImg) previewImg.src = '';
+        
+        showErrorPopup("Your image is too large. Please use a smaller image.");
+        feedback.textContent = "";
+        return;
+      }
+      
       feedback.textContent = err.error ?? "Failed to submit request.";
       feedback.style.background = "#f8d7da";
       feedback.style.borderLeftColor = "#dc3545";
@@ -198,8 +288,6 @@ document.getElementById("serviceRequestForm").addEventListener("submit", async (
     feedback.style.borderLeftColor = "#28a745";
 
     document.getElementById("serviceRequestForm").reset();
-    const imagePreview = document.getElementById("imagePreview");
-    const previewImg = document.getElementById("previewImg");
     if (imagePreview) imagePreview.classList.remove("show");
     if (previewImg) previewImg.src = "";
 
@@ -223,7 +311,7 @@ document.getElementById("serviceRequestForm").addEventListener("submit", async (
 
 async function loadRequests() {
   const table = document.getElementById("requestsTableBody");
-  table.innerHTML = "<tr><td colspan='7'>Loading...</td></tr>";
+  table.innerHTML = "<tr><td colspan='7'>Loading...";
 
   try {
     const token = await getFreshToken();
@@ -247,7 +335,7 @@ async function loadRequests() {
     const data = await res.json();
 
     if (!data.length) {
-      table.innerHTML = "<tr class='no-requests'><td colspan='7'>No requests found.</td></tr>";
+      table.innerHTML = "<tr class='no-requests'><td colspan='7'>No requests found.";
       return;
     }
 
@@ -277,7 +365,7 @@ async function loadRequests() {
 
   } catch (error) {
     console.error("Load requests error:", error);
-    table.innerHTML = "<tr><td colspan='7'>Failed to load requests.</td></tr>";
+    table.innerHTML = "<tr><td colspan='7'>Failed to load requests.";
   }
 }
 
@@ -307,7 +395,7 @@ window.deleteReport = async function (firestoreId, btn) {
 
     const table = document.getElementById("requestsTableBody");
     if (!table.querySelector("tr")) {
-      table.innerHTML = "<tr class='no-requests'><td colspan='7'>No reports found.</td></tr>";
+      table.innerHTML = "<tr class='no-requests'><td colspan='7'>No reports found.";
     }
 
   } catch {
