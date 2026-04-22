@@ -238,6 +238,8 @@
   });
 });*/
 
+require('./helpers');
+
 describe('Municipal Service Portal — Sprint 2 Tests', () => {
 
   // ── US1: Create Report — field validation ──────────────────────────────
