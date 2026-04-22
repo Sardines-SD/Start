@@ -28,7 +28,15 @@ jobs:
         env:
           ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
 
+      - name: List coverage files
+        run: ls -la coverage/
+
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: fixmycity-coverage
+          fail_ci_if_error: false
+          verbose: true
