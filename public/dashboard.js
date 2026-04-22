@@ -10,6 +10,8 @@ import {
   getDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { firebaseConfig } from "./firebaseConfig.js";
+import { initAssistant, toggleAssistant } from './assistant.js';
+
 
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -79,6 +81,10 @@ onAuthStateChanged(auth, async (user) => {
   const userDoc = await getDoc(doc(db, "users", user.uid));
   const role    = userDoc.exists() ? userDoc.data().role : "user";
   localStorage.setItem("role", role);
+  
+  // Initialize assistant with user data
+  const userName = userDoc.exists() ? userDoc.data().username : null;
+  initAssistant(user, userName);
 
   if (role === "admin") {
     window.location.href = "AdminDashboard.html";
@@ -102,6 +108,9 @@ onAuthStateChanged(auth, async (user) => {
     searchInput.addEventListener("input", loadRequests);
   }
 });
+
+// Make toggleAssistant available globally for HTML onclick
+window.toggleAssistant = toggleAssistant;
 
 async function getFreshToken() {
   const user = auth.currentUser;
