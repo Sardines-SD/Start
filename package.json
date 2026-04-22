@@ -5,7 +5,7 @@
   "main": "Server.js",
   "scripts": {
     "start": "node Server.js",
-    "test": "jest --coverage --coverageReporters=lcov --coverageReporters=text"
+    "test": "jest --coverage"
   },
   "keywords": [],
   "author": "",
@@ -13,12 +13,16 @@
   "type": "commonjs",
   "jest": {
     "collectCoverage": true,
+    "collectCoverageFrom": [
+      "test/helpers.js"
+    ],
     "coverageReporters": [
       "lcov",
       "text",
       "clover"
     ],
-    "coverageDirectory": "coverage"
+    "coverageDirectory": "coverage",
+    "testEnvironment": "node"
   },
   "dependencies": {
     "cors": "^2.8.6",
