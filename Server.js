@@ -1,6 +1,11 @@
+require("dotenv").config();
+const fs   = require('fs');
+const path = require('path');
+const booleanPointInPolygon = require('@turf/boolean-point-in-polygon').default;
+const { point } = require('@turf/helpers');
 const express = require("express");
 const cors    = require("cors");
-const path    = require("path");
+
 const admin   = require("firebase-admin");
 const nodemailer = require("nodemailer");
 
@@ -17,6 +22,33 @@ admin.initializeApp({
 });
 
 const db = admin.firestore();
+
+
+let wardGeoJSON = null;
+try {
+  const wardPath = path.join(__dirname, 'public', 'data', 'sa-wards.geojson');
+  wardGeoJSON = JSON.parse(fs.readFileSync(wardPath, 'utf8'));
+  console.log(`✅ Loaded ${wardGeoJSON.features.length} ward boundaries`);
+} catch (err) {
+  console.error('❌ Failed to load ward GeoJSON:', err.message);
+}
+
+function getWardInfo(lat, lng) {
+  if (!wardGeoJSON) return { ward: null, wardNo: null, municipality: null, province: null };
+  const pt = point([lng, lat]);
+  for (const feature of wardGeoJSON.features) {
+    if (booleanPointInPolygon(pt, feature)) {
+      return {
+        ward:         feature.properties.WardLabel,
+        wardNo:       feature.properties.WardNo,
+        municipality: feature.properties.Municipali,
+        province:     feature.properties.Province,
+      };
+    }
+  }
+  return { ward: null, wardNo: null, municipality: null, province: null };
+}
+
 
 // ── EMAIL TRANSPORTER ─────────────────────────────────────────────────────────
 const transporter = nodemailer.createTransport({
@@ -117,7 +149,7 @@ async function getRole(uid) {
 
 // ── CREATE REQUEST (with optional image) ─────────────────────────────────────
 app.post("/api/requests", requireAuth, async (req, res) => {
-  const { category, description, image } = req.body;
+  const { category, description, image, latitude, longitude } = req.body;
   if (!category || !description) {
     return res.status(400).json({ error: "Category and description are required" });
   }
@@ -128,13 +160,23 @@ app.post("/api/requests", requireAuth, async (req, res) => {
 
   try {
     const requestData = {
-      userId:    req.user.uid,
-      userEmail: req.user.email,
-      category,
-      description,
-      status:    "pending",
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    };
+  userId:    req.user.uid,
+  userEmail: req.user.email,
+  category,
+  description,
+  status:    'pending',
+  createdAt: admin.firestore.FieldValue.serverTimestamp(),
+};
+
+if (latitude !== undefined && longitude !== undefined) {
+  requestData.latitude     = latitude;
+  requestData.longitude    = longitude;
+  const wardInfo           = getWardInfo(latitude, longitude);
+  requestData.ward         = wardInfo.ward;
+  requestData.wardNo       = wardInfo.wardNo;
+  requestData.municipality = wardInfo.municipality;
+  requestData.province     = wardInfo.province;
+}
 
     if (image && image !== "") {
       requestData.image = image;

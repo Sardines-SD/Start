@@ -117,7 +117,7 @@ document.addEventListener("keydown", function (e) {
 
 async function loadAllRequests() {
   const table = document.getElementById("requestsTable");
-  table.innerHTML = "<tr><td colspan='8'>Loading...</td></tr>";
+  table.innerHTML = "<tr><td colspan='10'>Loading...</td></tr>";
 
   try {
     const token = await getFreshToken();
@@ -134,7 +134,7 @@ async function loadAllRequests() {
     updateStats(allRequests);
     filterRequests();
   } catch {
-    table.innerHTML = "<tr><td colspan='8'>Failed to load requests.</td></tr>";
+    table.innerHTML = "<tr><td colspan='10'>Failed to load requests.</td></tr>";
   }
 }
 
@@ -142,7 +142,7 @@ function renderRequestsTable(data) {
   const table = document.getElementById("requestsTable");
 
   if (!data.length) {
-    table.innerHTML = "<tr><td colspan='8'>No requests found.</td></tr>";
+    table.innerHTML = "<tr><td colspan='10'>No requests found.</td></tr>";
     return;
   }
 
@@ -160,6 +160,8 @@ function renderRequestsTable(data) {
         <td>${escapeHtml(req.userEmail ?? "-")}</td>
         <td>${escapeHtml(req.category)}</td>
         <td>${escapeHtml(req.description)}</td>
+        <td>${req.ward || '—'}</td>
+        <td>${req.municipality || '—'}</td>
         <td>${escapeHtml(req.createdAt ?? "-")}</td>
         <td><span class="badge badge-${statusClass}">${escapeHtml(req.status)}</span></td>
         <td class="proof-cell">${imageHtml}</td>
@@ -261,7 +263,8 @@ async function loadAllUsers() {
       <tr>
         <td>${escapeHtml(u.username ?? "-")}</td>
         <td>${escapeHtml(u.email)}</td>
-        <td>${escapeHtml(u.ward ?? "-")}</td>
+        <td>${u.ward || '—'}</td>
+	      <td>${u.municipality || '—'}</td>
         <td><span class="badge badge-${escapeHtml(u.role)}">${escapeHtml(u.role)}</span></td>
         <td>
           <select class="role-select" data-uid="${escapeHtml(u.uid)}" onchange="updateRole(this)">

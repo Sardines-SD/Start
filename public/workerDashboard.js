@@ -115,6 +115,8 @@ function renderTable(data) {
         <td>${escapeHtml(req.userEmail ?? "—")}</td>
         <td>${escapeHtml(req.category)}</td>
         <td>${escapeHtml(req.description)}</td>
+	<td>${req.ward || '—'}</td>
+	<td>${req.municipality || '—'}</td>
         <td>${escapeHtml(req.createdAt ?? "—")}</td>
         <td><span class="badge badge-${statusClass}">${escapeHtml(req.status)}</span></td>
         <td class="proof-cell">${imageHtml}</td>

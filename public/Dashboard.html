@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>User Dashboard - Municipal Service Portal</title>
   <link rel="stylesheet" href="styler.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     /* Match Admin/Worker Dashboard styling */
     body {
@@ -442,6 +443,56 @@
       border-radius: 8px;
       cursor: pointer;
     }
+
+
+    #issueMap {
+  height: 300px;
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid #c8d4e0;
+  margin-top: 6px;
+  z-index: 0;
+}
+.map-hint {
+  font-size: 12px;
+  color: #5a7a9a;
+  margin-top: 5px;
+}
+.location-tag {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #e9f2ff;
+  border-left: 4px solid #2b5fa8;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #1a2a3a;
+  display: none;
+}
+.location-tag.visible {
+  display: block;
+}
+.map-search-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.map-search-bar input {
+  flex: 1;
+}
+.btn-locate {
+  padding: 9px 14px;
+  background: #2b5fa8;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-locate:hover { background: #1e4a8a; }	
+
+
   </style>
 </head>
 <body>
@@ -488,6 +539,21 @@
         <img id="previewImg" src="" alt="Preview">
       </div>
 
+
+	<label>Issue Location <span style="color:#dc3545">*</span></label>
+<p class="map-hint">Search for a street or area, then click the map to pin the exact location of the issue.</p>
+
+<div class="map-search-bar">
+  <input type="text" id="mapSearchInput" placeholder="Search street, suburb or area in Johannesburg..." autocomplete="off">
+  <button type="button" class="btn-locate" id="nearMeBtn">📍 Near Me</button>
+</div>
+
+<div id="issueMap"></div>
+<div id="locationTag" class="location-tag"></div>
+
+<input type="hidden" id="issueLatitude"  name="latitude">
+<input type="hidden" id="issueLongitude" name="longitude">
+
       <button type="submit">Submit Request</button>
     </form>
 
@@ -512,6 +578,8 @@
             <th>ID</th>
             <th>Category</th>
             <th>Description</th>
+	    <th>Ward</th>
+	    <th>Municipality</th>
             <th>Status</th>
             <th>Date</th>
             <th>Proof</th>
@@ -520,7 +588,7 @@
         </thead>
         <tbody id="requestsTableBody">
           <tr class="no-requests">
-            <td colspan="7">No requests yet. </td>
+            <td colspan="9">No requests yet. </td>
           </tr>
         </tbody>
       </table>
@@ -563,7 +631,7 @@
     <button onclick="processAssistantInput()">Send</button>
   </div>
 </div>
-
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script type="module" src="dashboard.js"></script>
 </body>
 </html>
