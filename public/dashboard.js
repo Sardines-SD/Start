@@ -21,7 +21,8 @@ const ROLE_REDIRECT = {
   admin:  "AdminDashboard.html",
   worker: "WorkerDashboard.html",
 };
-
+let issueMap    = null;
+let issueMarker = null;
 //popup message for when an image is too large
 
 function showErrorPopup(message) {
@@ -72,6 +73,86 @@ function showErrorPopup(message) {
   document.body.appendChild(overlay);
 }
 
+
+function initIssueMap() {
+  if (issueMap) return;
+
+  // Centered on Johannesburg
+  issueMap = L.map('issueMap').setView([-26.2041, 28.0473], 11);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 19,
+  }).addTo(issueMap);
+
+  // Search box — queries Nominatim restricted to Johannesburg area
+  const searchInput  = document.getElementById('mapSearchInput');
+  let   debounceTimer = null;
+
+  searchInput.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(async () => {
+      const query = searchInput.value.trim();
+      if (query.length < 3) return;
+      try {
+        const res  = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ', Johannesburg, South Africa')}&format=json&limit=1`
+        );
+        const results = await res.json();
+        if (results.length > 0) {
+          issueMap.setView([parseFloat(results[0].lat), parseFloat(results[0].lon)], 14);
+        }
+      } catch (e) {
+        console.error('Search error:', e);
+      }
+    }, 500);
+  });
+
+  // Near Me — only pans the map, does NOT set the pin
+  document.getElementById('nearMeBtn').addEventListener('click', () => {
+    if (!navigator.geolocation) return alert('Geolocation not supported.');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => issueMap.setView([pos.coords.latitude, pos.coords.longitude], 14),
+      ()    => alert('Could not get your location.')
+    );
+  });
+
+  // Click to place/move pin
+  issueMap.on('click', (e) => placePin(e.latlng.lat, e.latlng.lng));
+}
+
+function placePin(lat, lng) {
+  if (issueMarker) issueMap.removeLayer(issueMarker);
+
+  issueMarker = L.marker([lat, lng], { draggable: true }).addTo(issueMap);
+
+  issueMarker.on('dragend', (e) => {
+    const pos = e.target.getLatLng();
+    updateLocationFields(pos.lat, pos.lng);
+  });
+
+  updateLocationFields(lat, lng);
+}
+
+async function updateLocationFields(lat, lng) {
+  document.getElementById('issueLatitude').value  = lat;
+  document.getElementById('issueLongitude').value = lng;
+
+  const tag = document.getElementById('locationTag');
+  tag.textContent = `📍 Pinned: ${lat.toFixed(5)}, ${lng.toFixed(5)} — looking up address...`;
+  tag.classList.add('visible');
+
+  try {
+    const res  = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
+    );
+    const data = await res.json();
+    tag.textContent = `📍 ${data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`}`;
+  } catch {
+    tag.textContent = `📍 Location pinned at ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  }
+}
+
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.href = "index.html";
@@ -102,6 +183,7 @@ onAuthStateChanged(auth, async (user) => {
   document.getElementById("welcomeMsg").textContent = "Welcome, " + user.email;
   loadRequests();
   setupImagePreview();
+  initIssueMap();
 
   const searchInput = document.getElementById("searchInput");
   if (searchInput) {
@@ -128,6 +210,24 @@ window.logout = async function () {
     window.location.href = "index.html";
   }
 };
+
+// ── LOGOUT BUTTON ESCAPE ANIMATION ───────────────────────────────────────────
+let logoutClickCount = 0;
+
+document.getElementById("logoutBtn").addEventListener("click", async () => {
+  logoutClickCount++;
+
+  if (logoutClickCount === 1) {
+    // First click — slide right
+    document.getElementById("logoutBtn").style.transform = "translate(120px,80px)";
+  } else if (logoutClickCount === 2) {
+    // Second click — slide back to original
+    document.getElementById("logoutBtn").style.transform = "translate(0px,0px)";
+  } else {
+    // Third click — actually log out
+    await logout();
+  }
+});
 
 // like the function says, it compresses the image since Firebase limits us to 1MB
 function compressImage(file, maxWidth = 1024, quality = 0.7) {
@@ -238,6 +338,19 @@ document.getElementById("serviceRequestForm").addEventListener("submit", async (
   feedback.style.background = "#e9f2ff";
   feedback.style.borderLeftColor = "#2b5fa8";
 
+
+const latitude  = document.getElementById('issueLatitude').value;
+const longitude = document.getElementById('issueLongitude').value;
+
+if (!latitude || !longitude) {
+  feedback.textContent = 'Please pin the location of the issue on the map.';
+  feedback.style.background = '#f8d7da';
+  feedback.style.borderLeftColor = '#dc3545';
+  document.getElementById('issueMap').scrollIntoView({ behavior: 'smooth' });
+  return;
+}
+
+
   try {
     const token = await getFreshToken();
     let imageBase64 = null;
@@ -269,7 +382,9 @@ document.getElementById("serviceRequestForm").addEventListener("submit", async (
       body: JSON.stringify({
         category,
         description,
-        image: imageBase64
+        image: imageBase64,
+	 latitude:  parseFloat(latitude),
+ 	 longitude: parseFloat(longitude),
       }),
     });
 
@@ -297,6 +412,15 @@ document.getElementById("serviceRequestForm").addEventListener("submit", async (
     feedback.style.borderLeftColor = "#28a745";
 
     document.getElementById("serviceRequestForm").reset();
+
+    if (issueMarker) {
+  		issueMap.removeLayer(issueMarker);
+  		issueMarker = null;
+	}
+	document.getElementById('issueLatitude').value  = '';
+	document.getElementById('issueLongitude').value = '';
+	document.getElementById('locationTag').classList.remove('visible');
+
     if (imagePreview) imagePreview.classList.remove("show");
     if (previewImg) previewImg.src = "";
 
@@ -320,7 +444,7 @@ document.getElementById("serviceRequestForm").addEventListener("submit", async (
 
 async function loadRequests() {
   const table = document.getElementById("requestsTableBody");
-  table.innerHTML = "<tr><td colspan='7'>Loading...";
+  table.innerHTML = "<tr><td colspan='9'>Loading...";
 
   try {
     const token = await getFreshToken();
@@ -344,7 +468,7 @@ async function loadRequests() {
     const data = await res.json();
 
     if (!data.length) {
-      table.innerHTML = "<tr class='no-requests'><td colspan='7'>No requests found.";
+      table.innerHTML = "<tr class='no-requests'><td colspan='9'>No requests found.";
       return;
     }
 
@@ -359,6 +483,8 @@ async function loadRequests() {
           <td>${escapeHtml(r.id)}</td>
           <td>${escapeHtml(r.category)}</td>
           <td>${escapeHtml(r.description.substring(0, 80))}${r.description.length > 80 ? "..." : ""}</td>
+	  <td>${r.ward || '—'}</td>
+	  <td>${r.municipality || '—'}</td>
           <td><span class="badge badge-${getStatusClass(r.status)}">${escapeHtml(r.status)}</span></td>
           <td>${r.createdAt ? new Date(r.createdAt).toLocaleString() : ""}</td>
           <td class="proof-cell">${imageHtml}</td>
@@ -374,7 +500,7 @@ async function loadRequests() {
 
   } catch (error) {
     console.error("Load requests error:", error);
-    table.innerHTML = "<tr><td colspan='7'>Failed to load requests.";
+    table.innerHTML = "<tr><td colspan='9'>Failed to load requests.";
   }
 }
 
@@ -404,7 +530,7 @@ window.deleteReport = async function (firestoreId, btn) {
 
     const table = document.getElementById("requestsTableBody");
     if (!table.querySelector("tr")) {
-      table.innerHTML = "<tr class='no-requests'><td colspan='7'>No reports found.";
+      table.innerHTML = "<tr class='no-requests'><td colspan='9'>No reports found.";
     }
 
   } catch {
