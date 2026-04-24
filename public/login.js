@@ -2,11 +2,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import {
   getAuth,
   signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
   getFirestore,
   doc,
   getDoc,
+  setDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { firebaseConfig } from "./firebaseConfig.js";
 
@@ -23,6 +26,7 @@ const ROLE_REDIRECT = {
   user:   "Dashboard.html",
 };
 
+// Email/Password Login
 if (loginForm) {
   loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -36,19 +40,16 @@ if (loginForm) {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user           = userCredential.user;
 
-      // ── Always fetch role fresh from Firestore — never trust a cached value ──
       const userDoc = await getDoc(doc(db, "users", user.uid));
       const role    = userDoc.exists() ? userDoc.data().role : "user";
       const idToken = await user.getIdToken(true);
 
-      // Clear old session completely before writing new one
       localStorage.clear();
       localStorage.setItem("idToken",   idToken);
       localStorage.setItem("userEmail", user.email);
       localStorage.setItem("userId",    user.uid);
       localStorage.setItem("role",      role);
 
-      // Redirect based on role (all dashboards exist)
       window.location.href = ROLE_REDIRECT[role] ?? "Dashboard.html";
 
     } catch (err) {
@@ -64,3 +65,55 @@ if (loginForm) {
     }
   });
 }
+
+// Google Sign-In
+const googleProvider = new GoogleAuthProvider();
+
+export async function signInWithGoogle() {
+  const loginFeedback = document.getElementById("loginFeedback");
+  if (loginFeedback) loginFeedback.textContent = "Signing in with Google…";
+
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    const user = result.user;
+
+    // Check if user exists in Firestore
+    const userDoc = await getDoc(doc(db, "users", user.uid));
+    
+    let role = "user";
+
+    if (!userDoc.exists()) {
+      // New user — create Firestore document with default role "user"
+      await setDoc(doc(db, "users", user.uid), {
+        email: user.email,
+        name: user.displayName || "",
+        role: "user",
+        createdAt: new Date(),
+        authProvider: "google",
+      });
+      role = "user";
+    } else {
+      role = userDoc.data().role;
+    }
+
+    const idToken = await user.getIdToken(true);
+
+    localStorage.clear();
+    localStorage.setItem("idToken", idToken);
+    localStorage.setItem("userEmail", user.email);
+    localStorage.setItem("userId", user.uid);
+    localStorage.setItem("role", role);
+
+    // Redirect based on role
+    window.location.href = ROLE_REDIRECT[role] ?? "Dashboard.html";
+
+  } catch (err) {
+    console.error("Google sign-in error:", err);
+    if (loginFeedback) {
+      loginFeedback.textContent = "Google sign-in failed. Please try again.";
+    }
+  }
+}
+
+// Attach to window for HTML button to access
+window.signInWithGoogle = signInWithGoogle;
