@@ -23,7 +23,6 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
-
 let wardGeoJSON = null;
 try {
   const wardPath = path.join(__dirname, 'public', 'data', 'sa-wards.geojson');
@@ -49,7 +48,6 @@ function getWardInfo(lat, lng) {
   return { ward: null, wardNo: null, municipality: null, province: null };
 }
 
-
 // ── EMAIL TRANSPORTER ─────────────────────────────────────────────────────────
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -59,6 +57,40 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// ── NEW: VERIFICATION EMAIL SENDER ────────────────────────────────────────────
+async function sendVerificationEmail(toEmail, code, name = "") {
+  const html = `
+  <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
+    <div style="background:linear-gradient(135deg, #2b5fa8, #1a3f7a);padding:24px 32px;text-align:center">
+      <h1 style="color:#fff;margin:0;font-size:22px">Municipal Service Portal</h1>
+    </div>
+    <div style="padding:32px">
+      <h2 style="color:#2b5fa8;margin-top:0">Welcome${name ? ' ' + name : ''}!</h2>
+      <p style="color:#374151;font-size:15px">Thank you for registering. Please use the verification code below to complete your registration:</p>
+      
+      <div style="text-align:center;padding:20px;margin:20px 0">
+        <div style="font-size:36px;letter-spacing:10px;font-weight:bold;background:#f0f4f8;padding:15px;border-radius:8px;font-family:monospace;display:inline-block">
+          ${code}
+        </div>
+      </div>
+      
+      <p style="color:#6b7280;font-size:14px">This code will expire in <strong>15 minutes</strong>.</p>
+      <p style="color:#6b7280;font-size:14px">If you didn't create an account, you can safely ignore this email.</p>
+    </div>
+    <div style="background:#f3f4f6;padding:16px 32px;text-align:center">
+      <p style="color:#9ca3af;font-size:12px;margin:0">Municipal Service Delivery Reporting Portal</p>
+    </div>
+  </div>`;
+
+  await transporter.sendMail({
+    from:    process.env.EMAIL_FROM || process.env.EMAIL_USER,
+    to:      toEmail,
+    subject: "Verify Your Email - Municipal Service Portal",
+    html,
+  });
+}
+
+// ── STATUS EMAIL SENDER (existing) ───────────────────────────────────────────
 const STATUS_LABELS = {
   "pending":     "Pending",
   "in-progress": "In Progress",
@@ -128,6 +160,23 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
+// ── NEW: SEND VERIFICATION EMAIL ENDPOINT ─────────────────────────────────────
+app.post("/api/send-verification-email", async (req, res) => {
+  const { email, code, name } = req.body;
+  
+  if (!email || !code) {
+    return res.status(400).json({ error: "Email and code are required" });
+  }
+  
+  try {
+    await sendVerificationEmail(email, code, name);
+    res.json({ success: true, message: "Verification email sent" });
+  } catch (error) {
+    console.error("Email sending error:", error);
+    res.status(500).json({ error: "Failed to send email" });
+  }
+});
+
 async function requireAuth(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -160,23 +209,23 @@ app.post("/api/requests", requireAuth, async (req, res) => {
 
   try {
     const requestData = {
-  userId:    req.user.uid,
-  userEmail: req.user.email,
-  category,
-  description,
-  status:    'pending',
-  createdAt: admin.firestore.FieldValue.serverTimestamp(),
-};
+      userId:    req.user.uid,
+      userEmail: req.user.email,
+      category,
+      description,
+      status:    'pending',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
 
-if (latitude !== undefined && longitude !== undefined) {
-  requestData.latitude     = latitude;
-  requestData.longitude    = longitude;
-  const wardInfo           = getWardInfo(latitude, longitude);
-  requestData.ward         = wardInfo.ward;
-  requestData.wardNo       = wardInfo.wardNo;
-  requestData.municipality = wardInfo.municipality;
-  requestData.province     = wardInfo.province;
-}
+    if (latitude !== undefined && longitude !== undefined) {
+      requestData.latitude     = latitude;
+      requestData.longitude    = longitude;
+      const wardInfo           = getWardInfo(latitude, longitude);
+      requestData.ward         = wardInfo.ward;
+      requestData.wardNo       = wardInfo.wardNo;
+      requestData.municipality = wardInfo.municipality;
+      requestData.province     = wardInfo.province;
+    }
 
     if (image && image !== "") {
       requestData.image = image;
@@ -311,6 +360,7 @@ app.patch("/api/requests/:id", requireAuth, async (req, res) => {
     res.status(500).json({ error: "Failed to update status" });
   }
 });
+
 // ── DELETE REQUEST (owner or admin only) ──────────────────────────────────────
 app.delete("/api/requests/:id", requireAuth, async (req, res) => {
   const { id } = req.params;

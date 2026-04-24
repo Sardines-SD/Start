@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Email - Municipal Service Portal</title>
+  <link rel="stylesheet" href="styler.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: linear-gradient(135deg, #2b5fa8, #1a3f7a);
+    }
+    
+    header {
+      background: transparent;
+      padding: 40px 20px 20px;
+      text-align: center;
+    }
+    
+    .header-brand h1 {
+      color: white;
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .verify-card {
+      background: white;
+      border-radius: 12px;
+      padding: 40px;
+      width: 100%;
+      max-width: 450px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+    
+    .verify-card h2 {
+      color: #1a2a3a;
+      margin-bottom: 15px;
+      font-size: 24px;
+    }
+    
+    .verify-card p {
+      color: #5a6e7c;
+      margin-bottom: 25px;
+      line-height: 1.5;
+    }
+    
+    .verify-card p strong {
+      color: #2b5fa8;
+    }
+    
+    .otp-input {
+      font-size: 32px;
+      letter-spacing: 12px;
+      text-align: center;
+      padding: 15px;
+      width: 100%;
+      border: 2px solid #c8d4e0;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-weight: bold;
+    }
+    
+    .otp-input:focus {
+      outline: none;
+      border-color: #2b5fa8;
+    }
+    
+    button {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #2b5fa8, #1a3f7a);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.2s, background 0.2s;
+    }
+    
+    button:hover {
+      background: linear-gradient(135deg, #1e4a8a, #12306b);
+      transform: translateY(-1px);
+    }
+    
+    .resend-link {
+      display: block;
+      margin-top: 15px;
+      color: #2b5fa8;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .resend-link:hover {
+      text-decoration: underline;
+    }
+    
+    .back-link {
+      display: block;
+      margin-top: 12px;
+      color: #6a84a0;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    
+    .back-link:hover {
+      color: #2b5fa8;
+      text-decoration: underline;
+    }
+    
+    .message {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: rgba(255,255,255,0.7);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-brand">
+      <h1>Municipal Service Delivery<br>Reporting Portal</h1>
+    </div>
+  </header>
+  
+  <main>
+    <div class="verify-card">
+      <h2>Verify Your Email</h2>
+      <p>We sent a 6-digit code to <strong id="userEmail"></strong></p>
+      <input type="text" id="otpCode" class="otp-input" maxlength="6" placeholder="• • • • • •">
+      <button id="verifyBtn">Verify Account</button>
+      <a href="#" id="resendLink" class="resend-link">Didn't receive code? Resend</a>
+      <a href="index.html" class="back-link">← Back to Login</a>
+      <div id="message" class="message"></div>
+    </div>
+  </main>
+  
+  <footer>
+    <p>© 2026 Municipal Service Delivery Reporting Portal</p>
+  </footer>
+  
+  <script type="module" src="verify-otp.js"></script>
+</body>
+</html>

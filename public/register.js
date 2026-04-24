@@ -21,10 +21,11 @@ const db   = getFirestore(app);
 const registerForm     = document.getElementById("registerForm");
 const registerFeedback = document.getElementById("registerFeedback");
 
+let isRegistering = false;  // Flag to prevent auto-redirect during registration
+
 // Check if user is already logged in - if yes, redirect to appropriate dashboard
 onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    // User is already logged in, redirect to appropriate dashboard
+  if (user && !isRegistering) {  // Only redirect if NOT in registration process
     const userDoc = await getDoc(doc(db, "users", user.uid));
     const role = userDoc.exists() ? userDoc.data().role : "user";
     
@@ -41,6 +42,7 @@ onAuthStateChanged(auth, async (user) => {
 if (registerForm) {
   registerForm.addEventListener("submit", async (e) => {
     e.preventDefault();
+    isRegistering = true;  // Prevent auto-redirect
 
     const username        = document.getElementById("Username").value.trim();
     const email           = document.getElementById("registerEmail").value.trim();
@@ -53,24 +55,28 @@ if (registerForm) {
       registerFeedback.textContent = "❌ Email is required.";
       registerFeedback.style.background = "#f8d7da";
       registerFeedback.style.borderLeftColor = "#dc3545";
+      isRegistering = false;
       return;
     }
     if (!ward) {
       registerFeedback.textContent = "❌ Ward number is required.";
       registerFeedback.style.background = "#f8d7da";
       registerFeedback.style.borderLeftColor = "#dc3545";
+      isRegistering = false;
       return;
     }
     if (password !== confirmPassword) {
       registerFeedback.textContent = "❌ Passwords do not match.";
       registerFeedback.style.background = "#f8d7da";
       registerFeedback.style.borderLeftColor = "#dc3545";
+      isRegistering = false;
       return;
     }
     if (password.length < 6) {
       registerFeedback.textContent = "❌ Password must be at least 6 characters.";
       registerFeedback.style.background = "#f8d7da";
       registerFeedback.style.borderLeftColor = "#dc3545";
+      isRegistering = false;
       return;
     }
 
@@ -81,29 +87,80 @@ if (registerForm) {
     try {
       // Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user           = userCredential.user;
+      const user = userCredential.user;
+
+      // Generate 6-digit OTP
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Set expiry to 15 minutes from now
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 15);
+      
+      // Save OTP to emailVerifications collection
+      await setDoc(doc(db, "emailVerifications", user.uid), {
+        userId: user.uid,
+        email: email,
+        code: otpCode,
+        expiresAt: expiresAt,
+        createdAt: new Date(),
+        verified: false
+      });
 
       // Save user data to Firestore
       await setDoc(doc(db, "users", user.uid), {
-        username: username || email.split('@')[0], // Use email prefix if no username
+        username: username || email.split('@')[0],
         email: email,
         ward: ward,
-        role: "user",  // Default role for new registrations
+        role: "user",
+        isEmailVerified: false,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
 
-      // Success message
-      registerFeedback.textContent = "✅ Registration successful! Redirecting to login...";
+      // Store pending user info in localStorage for verification page
+      localStorage.setItem("pendingUserId", user.uid);
+      localStorage.setItem("pendingUserEmail", email);
+      
+      // Log OTP to console for testing
+      console.log("=========================================");
+      console.log("VERIFICATION CODE FOR:", email);
+      console.log("CODE:", otpCode);
+      console.log("Expires at:", expiresAt.toLocaleTimeString());
+      console.log("=========================================");
+
+      // Send email with OTP
+      try {
+        const emailResponse = await fetch('/api/send-verification-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: email,
+            code: otpCode,
+            name: username || email.split('@')[0]
+          }),
+        });
+        
+        if (emailResponse.ok) {
+          console.log("Verification email sent successfully");
+        } else {
+          console.error("Failed to send verification email");
+        }
+      } catch (emailError) {
+        console.error("Email sending error:", emailError);
+      }
+      
+      registerFeedback.textContent = "✅ Account created! A verification code has been sent to " + email + ". Redirecting to verification page...";
       registerFeedback.style.background = "#d4edda";
       registerFeedback.style.borderLeftColor = "#28a745";
 
-      // Sign out the user so they can log in fresh
+      // Sign out the user so they can't access dashboard
       await signOut(auth);
       
-      // Redirect to Login page (index.html) after 2 seconds
+      // Redirect to OTP verification page
       setTimeout(() => {
-        window.location.href = "index.html";
+        window.location.href = "/verify-otp.html";
       }, 2000);
 
     } catch (err) {
@@ -119,6 +176,7 @@ if (registerForm) {
       registerFeedback.textContent = "❌ " + (messages[err.code] ?? "Registration failed. Please try again.");
       registerFeedback.style.background = "#f8d7da";
       registerFeedback.style.borderLeftColor = "#dc3545";
+      isRegistering = false;
     }
   });
 }
