@@ -4,12 +4,14 @@ import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
+  fetchSignInMethodsForEmail,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
   getFirestore,
   doc,
   getDoc,
   setDoc,
+  updateDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { firebaseConfig } from "./firebaseConfig.js";
 
@@ -34,7 +36,7 @@ if (loginForm) {
     const email    = document.getElementById("loginEmail").value.trim();
     const password = document.getElementById("loginPassword").value;
 
-    loginFeedback.textContent = "Logging in…";
+    loginFeedback.innerHTML = "Logging in…";
     loginFeedback.style.background = "#e9f2ff";
     loginFeedback.style.borderLeftColor = "#2b5fa8";
 
@@ -43,44 +45,69 @@ if (loginForm) {
       const user = userCredential.user;
 
       // Get user document from Firestore
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      const userData = userDoc.data();
+      let userDoc = await getDoc(doc(db, "users", user.uid));
+      let userData = userDoc.data();
+
+      // 🔧 FIX: If user is missing providers or hasPassword fields, add them
+      if (!userData || !userData.providers || userData.hasPassword === undefined) {
+        const hasPasswordField = true;
+        await updateDoc(doc(db, "users", user.uid), {
+          providers: ["password"],
+          hasPassword: hasPasswordField
+        });
+        userDoc = await getDoc(doc(db, "users", user.uid));
+        userData = userDoc.data();
+      }
 
       // 🔐 CHECK CUSTOM EMAIL VERIFICATION FIELD
       if (!userData || !userData.isEmailVerified) {
-        // Store pending info in localStorage for verification page
         localStorage.setItem("pendingUserId", user.uid);
         localStorage.setItem("pendingUserEmail", email);
         
-        // Sign them out
         await auth.signOut();
         
-        loginFeedback.textContent = "📧 Please verify your email. Redirecting to verification page...";
+        loginFeedback.innerHTML = "📧 Please verify your email. Redirecting to verification page...";
         loginFeedback.style.background = "#fff3cd";
         loginFeedback.style.borderLeftColor = "#ffc107";
         
-        // Auto-redirect to verify page after 2 seconds
         setTimeout(() => {
           window.location.href = "/verify-otp.html";
         }, 2000);
         
-        return; // Stop login process
+        return;
       }
 
-      // Email is verified — proceed with normal login
       const role = userData.role || "user";
       const idToken = await user.getIdToken(true);
 
       localStorage.clear();
-      localStorage.setItem("idToken",   idToken);
+      localStorage.setItem("idToken", idToken);
       localStorage.setItem("userEmail", user.email);
-      localStorage.setItem("userId",    user.uid);
-      localStorage.setItem("role",      role);
+      localStorage.setItem("userId", user.uid);
+      localStorage.setItem("role", role);
 
       window.location.href = ROLE_REDIRECT[role] ?? "Dashboard.html";
 
     } catch (err) {
       console.error("Login error:", err);
+      
+      const email = document.getElementById("loginEmail").value.trim();
+      
+      if (err.code === "auth/wrong-password" || err.code === "auth/user-not-found") {
+        try {
+          const signInMethods = await fetchSignInMethodsForEmail(auth, email);
+          
+          if (signInMethods.includes("google.com")) {
+            loginFeedback.innerHTML = '🔗 This email is registered with Google. <a href="set-password.html?email=' + encodeURIComponent(email) + '" style="color:#2b5fa8; text-decoration:underline;">Click here to set a password</a> or use "Continue with Google".';
+            loginFeedback.style.background = "#fff3cd";
+            loginFeedback.style.borderLeftColor = "#ffc107";
+            return;
+          }
+        } catch (fetchError) {
+          console.error("Error checking sign-in methods:", fetchError);
+        }
+      }
+      
       const messages = {
         "auth/invalid-credential": "Incorrect email or password.",
         "auth/user-not-found":     "No account found with that email.",
@@ -88,20 +115,20 @@ if (loginForm) {
         "auth/too-many-requests":  "Too many attempts. Please try again later.",
         "auth/invalid-email":      "Please enter a valid email address.",
       };
-      loginFeedback.textContent = messages[err.code] ?? "Login failed. Please try again.";
+      loginFeedback.innerHTML = messages[err.code] ?? "Login failed. Please try again.";
       loginFeedback.style.background = "#f8d7da";
       loginFeedback.style.borderLeftColor = "#dc3545";
     }
   });
 }
 
-// Google Sign-In (email is auto-verified by Google)
+// Google Sign-In with Account Linking
 const googleProvider = new GoogleAuthProvider();
 
 export async function signInWithGoogle() {
   const loginFeedback = document.getElementById("loginFeedback");
   if (loginFeedback) {
-    loginFeedback.textContent = "Signing in with Google…";
+    loginFeedback.innerHTML = "Signing in with Google…";
     loginFeedback.style.background = "#e9f2ff";
     loginFeedback.style.borderLeftColor = "#2b5fa8";
   }
@@ -110,23 +137,57 @@ export async function signInWithGoogle() {
     const result = await signInWithPopup(auth, googleProvider);
     const user = result.user;
 
-    // Google users are automatically considered verified
-    const userDoc = await getDoc(doc(db, "users", user.uid));
-    
+    let userDoc = await getDoc(doc(db, "users", user.uid));
     let role = "user";
 
     if (!userDoc.exists()) {
-      await setDoc(doc(db, "users", user.uid), {
-        email: user.email,
-        name: user.displayName || "",
-        role: "user",
-        isEmailVerified: true,  // Google users are pre-verified
-        createdAt: new Date(),
-        authProvider: "google",
-      });
-      role = "user";
+      const existingUserQuery = await db.collection("users").where("email", "==", user.email).get();
+      
+      if (!existingUserQuery.empty) {
+        const existingUserDoc = existingUserQuery.docs[0];
+        const existingData = existingUserDoc.data();
+        
+        const existingProviders = existingData.providers || ["password"];
+        if (!existingProviders.includes("google")) {
+          existingProviders.push("google");
+        }
+        
+        await setDoc(doc(db, "users", user.uid), {
+          ...existingData,
+          uid: user.uid,
+          providers: existingProviders,
+          hasPassword: existingData.hasPassword || true,
+          googleLinkedAt: new Date()
+        });
+        
+        role = existingData.role || "user";
+        
+        loginFeedback.innerHTML = "✅ Account linked! You can now sign in with either Google or email/password.";
+        loginFeedback.style.background = "#d4edda";
+        
+        userDoc = await getDoc(doc(db, "users", user.uid));
+      } else {
+        await setDoc(doc(db, "users", user.uid), {
+          email: user.email,
+          name: user.displayName || "",
+          role: "user",
+          providers: ["google"],
+          hasPassword: false,
+          isEmailVerified: true,
+          createdAt: new Date(),
+          authProvider: "google"
+        });
+        role = "user";
+      }
     } else {
-      role = userDoc.data().role;
+      const userData = userDoc.data();
+      if (!userData.providers || userData.hasPassword === undefined) {
+        await updateDoc(doc(db, "users", user.uid), {
+          providers: ["google"],
+          hasPassword: false
+        });
+      }
+      role = userData.role || "user";
     }
 
     const idToken = await user.getIdToken(true);
@@ -142,7 +203,7 @@ export async function signInWithGoogle() {
   } catch (err) {
     console.error("Google sign-in error:", err);
     if (loginFeedback) {
-      loginFeedback.textContent = "Google sign-in failed. Please try again.";
+      loginFeedback.innerHTML = "Google sign-in failed. Please try again.";
       loginFeedback.style.background = "#f8d7da";
       loginFeedback.style.borderLeftColor = "#dc3545";
     }

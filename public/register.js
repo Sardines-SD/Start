@@ -4,6 +4,7 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  fetchSignInMethodsForEmail,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
   getFirestore,
@@ -21,11 +22,10 @@ const db   = getFirestore(app);
 const registerForm     = document.getElementById("registerForm");
 const registerFeedback = document.getElementById("registerFeedback");
 
-let isRegistering = false;  // Flag to prevent auto-redirect during registration
+let isRegistering = false;
 
-// Check if user is already logged in - if yes, redirect to appropriate dashboard
 onAuthStateChanged(auth, async (user) => {
-  if (user && !isRegistering) {  // Only redirect if NOT in registration process
+  if (user && !isRegistering) {
     const userDoc = await getDoc(doc(db, "users", user.uid));
     const role = userDoc.exists() ? userDoc.data().role : "user";
     
@@ -42,7 +42,7 @@ onAuthStateChanged(auth, async (user) => {
 if (registerForm) {
   registerForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    isRegistering = true;  // Prevent auto-redirect
+    isRegistering = true;
 
     const username        = document.getElementById("Username").value.trim();
     const email           = document.getElementById("registerEmail").value.trim();
@@ -50,53 +50,52 @@ if (registerForm) {
     const password        = document.getElementById("registerPassword").value;
     const confirmPassword = document.getElementById("registerPasswordConfirm").value;
 
-    // Validation
     if (!email) {
-      registerFeedback.textContent = "❌ Email is required.";
+      registerFeedback.innerHTML = "❌ Email is required.";
       registerFeedback.style.background = "#f8d7da";
-      registerFeedback.style.borderLeftColor = "#dc3545";
       isRegistering = false;
       return;
     }
     if (!ward) {
-      registerFeedback.textContent = "❌ Ward number is required.";
+      registerFeedback.innerHTML = "❌ Ward number is required.";
       registerFeedback.style.background = "#f8d7da";
-      registerFeedback.style.borderLeftColor = "#dc3545";
       isRegistering = false;
       return;
     }
     if (password !== confirmPassword) {
-      registerFeedback.textContent = "❌ Passwords do not match.";
+      registerFeedback.innerHTML = "❌ Passwords do not match.";
       registerFeedback.style.background = "#f8d7da";
-      registerFeedback.style.borderLeftColor = "#dc3545";
       isRegistering = false;
       return;
     }
     if (password.length < 6) {
-      registerFeedback.textContent = "❌ Password must be at least 6 characters.";
+      registerFeedback.innerHTML = "❌ Password must be at least 6 characters.";
       registerFeedback.style.background = "#f8d7da";
-      registerFeedback.style.borderLeftColor = "#dc3545";
       isRegistering = false;
       return;
     }
 
-    registerFeedback.textContent = "Creating account...";
+    registerFeedback.innerHTML = "Checking account...";
     registerFeedback.style.background = "#e9f2ff";
-    registerFeedback.style.borderLeftColor = "#2b5fa8";
 
     try {
-      // Create user in Firebase Auth
+      const signInMethods = await fetchSignInMethodsForEmail(auth, email);
+      
+      if (signInMethods.includes("google.com")) {
+        registerFeedback.innerHTML = '🔗 This email is registered with Google. <a href="set-password.html?email=' + encodeURIComponent(email) + '" style="color:#2b5fa8; text-decoration:underline;">Click here to set a password</a> or use "Continue with Google" to sign in.';
+        registerFeedback.style.background = "#fff3cd";
+        registerFeedback.style.borderLeftColor = "#ffc107";
+        isRegistering = false;
+        return;
+      }
+      
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Generate 6-digit OTP
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-      
-      // Set expiry to 15 minutes from now
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + 15);
       
-      // Save OTP to emailVerifications collection
       await setDoc(doc(db, "emailVerifications", user.uid), {
         userId: user.uid,
         email: email,
@@ -106,59 +105,38 @@ if (registerForm) {
         verified: false
       });
 
-      // Save user data to Firestore
       await setDoc(doc(db, "users", user.uid), {
         username: username || email.split('@')[0],
         email: email,
         ward: ward,
         role: "user",
         isEmailVerified: false,
+        providers: ["password"],
+        hasPassword: true,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
 
-      // Store pending user info in localStorage for verification page
       localStorage.setItem("pendingUserId", user.uid);
       localStorage.setItem("pendingUserEmail", email);
       
-      // Log OTP to console for testing
-      console.log("=========================================");
-      console.log("VERIFICATION CODE FOR:", email);
-      console.log("CODE:", otpCode);
-      console.log("Expires at:", expiresAt.toLocaleTimeString());
-      console.log("=========================================");
+      console.log("VERIFICATION CODE:", otpCode);
 
-      // Send email with OTP
       try {
-        const emailResponse = await fetch('/api/send-verification-email', {
+        await fetch('/api/send-verification-email', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: email,
-            code: otpCode,
-            name: username || email.split('@')[0]
-          }),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, code: otpCode, name: username })
         });
-        
-        if (emailResponse.ok) {
-          console.log("Verification email sent successfully");
-        } else {
-          console.error("Failed to send verification email");
-        }
       } catch (emailError) {
-        console.error("Email sending error:", emailError);
+        console.error("Email error:", emailError);
       }
       
-      registerFeedback.textContent = "✅ Account created! A verification code has been sent to " + email + ". Redirecting to verification page...";
+      registerFeedback.innerHTML = "✅ Account created! A verification code has been sent to " + email + ". Redirecting...";
       registerFeedback.style.background = "#d4edda";
-      registerFeedback.style.borderLeftColor = "#28a745";
 
-      // Sign out the user so they can't access dashboard
       await signOut(auth);
       
-      // Redirect to OTP verification page
       setTimeout(() => {
         window.location.href = "/verify-otp.html";
       }, 2000);
@@ -170,12 +148,11 @@ if (registerForm) {
         "auth/email-already-in-use": "An account with that email already exists. Please login instead.",
         "auth/invalid-email": "Please enter a valid email address.",
         "auth/weak-password": "Password is too weak. Use at least 6 characters.",
-        "auth/operation-not-allowed": "Email/password accounts are not enabled. Please contact support.",
+        "auth/operation-not-allowed": "Email/password accounts are not enabled.",
       };
       
-      registerFeedback.textContent = "❌ " + (messages[err.code] ?? "Registration failed. Please try again.");
+      registerFeedback.innerHTML = "❌ " + (messages[err.code] ?? "Registration failed. Please try again.");
       registerFeedback.style.background = "#f8d7da";
-      registerFeedback.style.borderLeftColor = "#dc3545";
       isRegistering = false;
     }
   });

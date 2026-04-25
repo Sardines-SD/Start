@@ -48,7 +48,7 @@ function getWardInfo(lat, lng) {
   return { ward: null, wardNo: null, municipality: null, province: null };
 }
 
-// ── EMAIL TRANSPORTER ─────────────────────────────────────────────────────────
+//  EMAIL TRANSPORTER 
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -57,7 +57,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// ── NEW: VERIFICATION EMAIL SENDER ────────────────────────────────────────────
+// NEW: VERIFICATION EMAIL SENDER 
 async function sendVerificationEmail(toEmail, code, name = "") {
   const html = `
   <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
@@ -90,7 +90,7 @@ async function sendVerificationEmail(toEmail, code, name = "") {
   });
 }
 
-// ── STATUS EMAIL SENDER (existing) ───────────────────────────────────────────
+// STATUS EMAIL SENDER (existing)
 const STATUS_LABELS = {
   "pending":     "Pending",
   "in-progress": "In Progress",
@@ -160,7 +160,7 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// ── NEW: SEND VERIFICATION EMAIL ENDPOINT ─────────────────────────────────────
+//  SEND VERIFICATION EMAIL ENDPOINT
 app.post("/api/send-verification-email", async (req, res) => {
   const { email, code, name } = req.body;
   
@@ -174,6 +174,25 @@ app.post("/api/send-verification-email", async (req, res) => {
   } catch (error) {
     console.error("Email sending error:", error);
     res.status(500).json({ error: "Failed to send email" });
+  }
+});
+
+// NEW: SET PASSWORD FOR EXISTING GOOGLE USER 
+app.post("/api/set-password", async (req, res) => {
+  const { email, password } = req.body;
+  
+  if (!email || !password) {
+    return res.status(400).json({ error: "Email and password are required" });
+  }
+  
+  try {
+    const user = await admin.auth().getUserByEmail(email);
+    await admin.auth().updateUser(user.uid, { password: password });
+    console.log(`Password set for user: ${email}`);
+    res.json({ success: true, message: "Password set successfully" });
+  } catch (error) {
+    console.error("Set password error:", error);
+    res.status(500).json({ error: "Failed to set password: " + error.message });
   }
 });
 
@@ -196,7 +215,7 @@ async function getRole(uid) {
   return doc.exists ? doc.data().role : "user";
 }
 
-// ── CREATE REQUEST (with optional image) ─────────────────────────────────────
+// CREATE REQUEST (with optional image)
 app.post("/api/requests", requireAuth, async (req, res) => {
   const { category, description, image, latitude, longitude } = req.body;
   if (!category || !description) {
@@ -239,7 +258,7 @@ app.post("/api/requests", requireAuth, async (req, res) => {
   }
 });
 
-// ── GET MY REQUESTS (citizen — own reports only) ──────────────────────────────
+// GET MY REQUESTS (citizen — own reports only)
 app.get("/api/requests/my", requireAuth, async (req, res) => {
   try {
     const { status, search } = req.query;
@@ -277,7 +296,7 @@ app.get("/api/requests/my", requireAuth, async (req, res) => {
   }
 });
 
-// ── GET ALL REQUESTS (admin/worker sees all, user sees own) ──────────────────
+// GET ALL REQUESTS (admin/worker sees all, user sees own)
 app.get("/api/requests", requireAuth, async (req, res) => {
   try {
     const role      = await getRole(req.user.uid);
@@ -323,7 +342,7 @@ app.get("/api/requests", requireAuth, async (req, res) => {
   }
 });
 
-// ── UPDATE REQUEST STATUS ─────────────────────────────────────────────────────
+// UPDATE REQUEST STATUS
 app.patch("/api/requests/:id", requireAuth, async (req, res) => {
   const { id }     = req.params;
   const { status } = req.body;
@@ -346,7 +365,7 @@ app.patch("/api/requests/:id", requireAuth, async (req, res) => {
 
     await docRef.update({ status });
 
-    // ── Send email notification to the reporter ──────────────────────────────
+    // Send email notification to the reporter 
     const report = docSnap.data();
     if (report.userEmail) {
       sendStatusEmail(report.userEmail, report, status)
@@ -361,7 +380,7 @@ app.patch("/api/requests/:id", requireAuth, async (req, res) => {
   }
 });
 
-// ── DELETE REQUEST (owner or admin only) ──────────────────────────────────────
+// DELETE REQUEST (owner or admin only)
 app.delete("/api/requests/:id", requireAuth, async (req, res) => {
   const { id } = req.params;
   try {
@@ -385,7 +404,7 @@ app.delete("/api/requests/:id", requireAuth, async (req, res) => {
   }
 });
 
-// ── GET ALL USERS (admin only) ────────────────────────────────────────────────
+// GET ALL USERS (admin only)
 app.get("/api/users", requireAuth, async (req, res) => {
   try {
     const role = await getRole(req.user.uid);
@@ -405,7 +424,7 @@ app.get("/api/users", requireAuth, async (req, res) => {
   }
 });
 
-// ── UPDATE USER ROLE (admin only) ─────────────────────────────────────────────
+// UPDATE USER ROLE (admin only)
 app.patch("/api/users/:uid/role", requireAuth, async (req, res) => {
   const { uid }  = req.params;
   const { role } = req.body;
@@ -426,7 +445,7 @@ app.patch("/api/users/:uid/role", requireAuth, async (req, res) => {
   }
 });
 
-// ── DELETE USER (admin only, direct deletion) ────────────────────────────────
+// DELETE USER (admin only, direct deletion) 
 app.delete("/api/users/:uid", requireAuth, async (req, res) => {
   const { uid } = req.params;
   
@@ -459,7 +478,7 @@ app.delete("/api/users/:uid", requireAuth, async (req, res) => {
   }
 });
 
-// ── DELETE OWN ACCOUNT (User self-deletion - IMMEDIATE) ──────────────────────
+// DELETE OWN ACCOUNT (User self-deletion - IMMEDIATE)
 app.delete("/api/me", requireAuth, async (req, res) => {
   const userId = req.user.uid;
   const userEmail = req.user.email;
