@@ -164,6 +164,16 @@ function renderRequestsTable(data) {
         <td>${escapeHtml(req.description)}</td>
         <td>${req.ward || '-'}</td>
         <td>${req.municipality || '-'}</td>
+	<td>${escapeHtml(req.address || '-')}</td>
+	<td>
+  		${
+    req.latitude && req.longitude
+      ? `<a href="https://maps.google.com/?q=${req.latitude},${req.longitude}" target="_blank">
+          View Map
+        </a>`
+      : '-'
+  }
+	</td>
         <td>${escapeHtml(req.createdAt ?? "-")}</td>
         <td><span class="badge badge-${statusClass}">${escapeHtml(req.status)}</span></td>
         <td class="proof-cell">${imageHtml}</td>
@@ -267,6 +277,8 @@ async function loadAllUsers() {
         <td>${escapeHtml(u.email)}</td>
         <td>${u.ward || '-'}</td>
         <td>${u.municipality || '-'}</td>
+	
+
         <td><span class="badge badge-${escapeHtml(u.role)}">${escapeHtml(u.role)}</span></td>
         <td>
           <select class="role-select" data-uid="${escapeHtml(u.uid)}" onchange="updateRole(this)">
@@ -281,7 +293,7 @@ async function loadAllUsers() {
             ${u.uid === currentAdminId ? 'Cannot delete self' : 'Delete'}
           </button>
         </td>
-      </table>
+      </tr>
     `).join("");
   } catch {
     table.innerHTML = "<tr><td colspan='7'>Failed to load users.";

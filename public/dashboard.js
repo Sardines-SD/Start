@@ -476,6 +476,19 @@ async function loadRequests() {
           <td>${escapeHtml(r.description.substring(0, 80))}${r.description.length > 80 ? "..." : ""}</td>
           <td>${r.ward || '—'}</td>
           <td>${r.municipality || '—'}</td>
+
+	<td>${escapeHtml(r.address || '-')}</td>
+
+	<td>
+  	${
+    r.latitude && r.longitude
+      ? `<a href="https://maps.google.com/?q=${r.latitude},${r.longitude}" target="_blank">
+          View Map
+        </a>`
+      : '-'
+  }
+	</td>
+
           <td><span class="badge badge-${getStatusClass(r.status)}">${escapeHtml(r.status)}</span></td>
           <td>${r.createdAt ? new Date(r.createdAt).toLocaleString() : ""}</td>
           <td class="proof-cell">${imageHtml}</td>
