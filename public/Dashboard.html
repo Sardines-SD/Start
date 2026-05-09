@@ -344,155 +344,52 @@
     .btn-delete:hover { background: #b02a37; }
     .btn-delete:disabled { background: #aaa; cursor: not-allowed; }
 
-    /* Smart Report Assistant Styles */
-    .assistant-btn {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #2b5fa8, #1a3f7a);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-      transition: all 0.3s ease;
-      z-index: 1000;
-    }
-    .assistant-btn:hover {
-      transform: scale(1.1);
-      background: linear-gradient(135deg, #1e4a8a, #12306b);
-    }
-    .assistant-modal {
-      display: none;
-      position: fixed;
-      bottom: 90px;
-      right: 24px;
-      width: 350px;
-      height: 500px;
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-      flex-direction: column;
-      z-index: 1001;
-      overflow: hidden;
-    }
-    .assistant-header {
-      background: linear-gradient(135deg, #2b5fa8, #1a3f7a);
-      color: white;
-      padding: 15px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-weight: bold;
-    }
-    .assistant-close {
-      background: none;
-      border: none;
-      color: white;
-      font-size: 24px;
-      cursor: pointer;
-      margin: 0;
-      padding: 0;
-    }
-    .assistant-messages {
-      flex: 1;
-      padding: 15px;
-      overflow-y: auto;
-      background: #f5f7fa;
-    }
-    .assistant-message {
-      margin-bottom: 12px;
-      padding: 10px 12px;
-      border-radius: 12px;
-      max-width: 85%;
-      word-wrap: break-word;
-      font-size: 14px;
-    }
-    .assistant-message.user {
-      background: #2b5fa8;
-      color: white;
-      margin-left: auto;
-      text-align: right;
-    }
-    .assistant-message.bot {
-      background: white;
-      color: #333;
-      border: 1px solid #ddd;
-    }
-    .assistant-input-area {
-      display: flex;
-      padding: 12px;
-      border-top: 1px solid #ddd;
-      background: white;
-    }
-    .assistant-input-area input {
-      flex: 1;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      margin-right: 8px;
-    }
-    .assistant-input-area button {
-      padding: 10px 16px;
-      background: #2b5fa8;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-
-
     #issueMap {
-  height: 300px;
-  width: 100%;
-  border-radius: 8px;
-  border: 1px solid #c8d4e0;
-  margin-top: 6px;
-  z-index: 0;
-}
-.map-hint {
-  font-size: 12px;
-  color: #5a7a9a;
-  margin-top: 5px;
-}
-.location-tag {
-  margin-top: 8px;
-  padding: 8px 12px;
-  background: #e9f2ff;
-  border-left: 4px solid #2b5fa8;
-  border-radius: 6px;
-  font-size: 13px;
-  color: #1a2a3a;
-  display: none;
-}
-.location-tag.visible {
-  display: block;
-}
-.map-search-bar {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-.map-search-bar input {
-  flex: 1;
-}
-.btn-locate {
-  padding: 9px 14px;
-  background: #2b5fa8;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.btn-locate:hover { background: #1e4a8a; }	
-
-
+      height: 300px;
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid #c8d4e0;
+      margin-top: 6px;
+      z-index: 0;
+    }
+    .map-hint {
+      font-size: 12px;
+      color: #5a7a9a;
+      margin-top: 5px;
+    }
+    .location-tag {
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: #e9f2ff;
+      border-left: 4px solid #2b5fa8;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #1a2a3a;
+      display: none;
+    }
+    .location-tag.visible {
+      display: block;
+    }
+    .map-search-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .map-search-bar input {
+      flex: 1;
+    }
+    .btn-locate {
+      padding: 9px 14px;
+      background: #2b5fa8;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-locate:hover { background: #1e4a8a; }
   </style>
 </head>
 <body>
@@ -539,20 +436,19 @@
         <img id="previewImg" src="" alt="Preview">
       </div>
 
+      <label>Issue Location <span style="color:#dc3545">*</span></label>
+      <p class="map-hint">Search for a street or area, then click the map to pin the exact location of the issue.</p>
 
-	<label>Issue Location <span style="color:#dc3545">*</span></label>
-<p class="map-hint">Search for a street or area, then click the map to pin the exact location of the issue.</p>
+      <div class="map-search-bar">
+        <input type="text" id="mapSearchInput" placeholder="Search street, suburb or area in Johannesburg..." autocomplete="off">
+        <button type="button" class="btn-locate" id="nearMeBtn">📍 Near Me</button>
+      </div>
 
-<div class="map-search-bar">
-  <input type="text" id="mapSearchInput" placeholder="Search street, suburb or area in Johannesburg..." autocomplete="off">
-  <button type="button" class="btn-locate" id="nearMeBtn">📍 Near Me</button>
-</div>
+      <div id="issueMap"></div>
+      <div id="locationTag" class="location-tag"></div>
 
-<div id="issueMap"></div>
-<div id="locationTag" class="location-tag"></div>
-
-<input type="hidden" id="issueLatitude"  name="latitude">
-<input type="hidden" id="issueLongitude" name="longitude">
+      <input type="hidden" id="issueLatitude" name="latitude">
+      <input type="hidden" id="issueLongitude" name="longitude">
 
       <button type="submit">Submit Request</button>
     </form>
@@ -578,8 +474,8 @@
             <th>ID</th>
             <th>Category</th>
             <th>Description</th>
-	    <th>Ward</th>
-	    <th>Municipality</th>
+            <th>Ward</th>
+            <th>Municipality</th>
             <th>Status</th>
             <th>Date</th>
             <th>Proof</th>
@@ -606,31 +502,6 @@
   <img id="modalImage" src="" alt="Full size proof image">
 </div>
 
-<!-- Smart Report Assistant -->
-<div id="assistantBtn" class="assistant-btn" onclick="toggleAssistant()">
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-    <circle cx="12" cy="10" r="1" fill="white"/>
-    <circle cx="16" cy="10" r="1" fill="white"/>
-    <circle cx="8" cy="10" r="1" fill="white"/>
-  </svg>
-</div>
-
-<div id="assistantModal" class="assistant-modal">
-  <div class="assistant-header">
-    <span>Report Assistant</span>
-    <button onclick="toggleAssistant()" class="assistant-close">x</button>
-  </div>
-  <div class="assistant-messages" id="assistantMessages">
-    <div class="assistant-message bot">
-      Hi! I will help you create a service report. Just answer a few questions...
-    </div>
-  </div>
-  <div class="assistant-input-area">
-    <input type="text" id="assistantInput" placeholder="Type your answer..." onkeypress="handleAssistantKey(event)">
-    <button onclick="processAssistantInput()">Send</button>
-  </div>
-</div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script type="module" src="dashboard.js"></script>
 </body>
