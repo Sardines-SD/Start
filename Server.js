@@ -21,6 +21,21 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
+async function reverseGeocode(lat, lon) {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`
+    );
+
+    const data = await response.json();
+
+    return data.display_name || "Unknown location";
+  } catch (err) {
+    console.error("Reverse geocoding failed:", err);
+    return "Unknown location";
+  }
+}
+
 const db = admin.firestore();
 
 let wardGeoJSON = null;
@@ -225,6 +240,9 @@ app.post("/api/requests", requireAuth, async (req, res) => {
       requestData.wardNo       = wardInfo.wardNo;
       requestData.municipality = wardInfo.municipality;
       requestData.province     = wardInfo.province;
+      const address = await reverseGeocode(latitude, longitude);
+
+      requestData.address = address;
     }
 
     if (image && image !== "") {
