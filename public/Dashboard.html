@@ -6,6 +6,42 @@
   <link rel="stylesheet" href="styler.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
+
+
+@keyframes starPop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.35); }
+  70%  { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+.star-pop {
+  animation: starPop 0.28s ease forwards;
+}
+
+
+	/* ── TOAST ── */
+.toast {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  background: #155724;
+  color: #fff;
+  padding: 12px 22px;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.18);
+  z-index: 2000;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
     /* Match Admin/Worker Dashboard styling */
     body {
       margin: 0;
@@ -330,6 +366,131 @@
       color: #bbb;
     }
 
+	/* ── FEEDBACK MODAL ── */
+.feedback-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+.feedback-modal-overlay.open {
+  display: flex;
+}
+.feedback-modal {
+  background: #fff;
+  border-radius: 14px;
+  padding: 32px 28px 24px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+  position: relative;
+}
+.feedback-modal h3 {
+  margin: 0 0 6px;
+  color: #1a3f7a;
+  font-size: 1.15rem;
+}
+.feedback-modal .feedback-subtitle {
+  color: #6b7280;
+  font-size: 0.85rem;
+  margin-bottom: 20px;
+}
+.star-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.star-row span {
+  font-size: 2rem;
+  cursor: pointer;
+  color: #d1d5db;
+  transition: color 0.15s, transform 0.15s;
+  user-select: none;
+}
+.star-row span.active,
+.star-row span:hover ~ span { color: #d1d5db; }
+.star-row span.active,
+.star-row span:hover,
+.star-row:hover span { color: #f59e0b; }
+.star-row span:hover ~ span { color: #d1d5db !important; }
+.feedback-modal textarea {
+  width: 100%;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  resize: vertical;
+  min-height: 80px;
+  box-sizing: border-box;
+  margin-bottom: 16px;
+}
+.feedback-modal textarea:focus {
+  outline: none;
+  border-color: #2b5fa8;
+  box-shadow: 0 0 0 3px rgba(43,95,168,0.12);
+}
+.feedback-btn-row {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.btn-feedback-submit {
+  background: #2b5fa8;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 22px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.92rem;
+  transition: background 0.2s;
+}
+.btn-feedback-submit:hover { background: #1a3f7a; }
+.btn-feedback-cancel {
+  background: #f3f4f6;
+  color: #374151;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 18px;
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 0.92rem;
+}
+.feedback-thankyou {
+  text-align: center;
+  padding: 24px 0 8px;
+  color: #155724;
+  font-size: 1rem;
+}
+.feedback-thankyou .big-check { font-size: 2.5rem; display: block; margin-bottom: 8px; }
+.feedback-close-btn {
+  position: absolute;
+  top: 12px; right: 16px;
+  background: none; border: none;
+  font-size: 1.4rem; cursor: pointer; color: #9ca3af;
+}
+/* Rate button in table */
+.btn-rate {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1.5px solid #f59e0b;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-rate:hover { background: #fde68a; }
+.feedback-given {
+  font-size: 0.85rem;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
     footer {
       background: transparent;
       box-shadow: none;
@@ -492,6 +653,7 @@
 	    <th>Address</th>
 	    <th>Location</th>
             <th>Status</th>
+	    <th>Feedback</th>
             <th>Date</th>
             <th>Proof</th>
             <th>Action</th>
@@ -516,6 +678,50 @@
   <span class="close-modal">&times;</span>
   <img id="modalImage" src="" alt="Full size proof image">
 </div>
+
+<!-- FEEDBACK MODAL -->
+<div id="feedbackModalOverlay" class="feedback-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="feedbackModalTitle">
+  <div class="feedback-modal">
+    <button class="feedback-close-btn" onclick="closeFeedbackModal()" aria-label="Close">&times;</button>
+    <div id="feedbackFormSection">
+      <h3 id="feedbackModalTitle">⭐ Rate this Resolution</h3>
+      <p class="feedback-subtitle">How satisfied are you with how this issue was handled?</p>
+      <div class="star-row" id="starRow" role="group" aria-label="Star rating">
+<p id="starLabel" style="
+  text-align:center;
+  font-size:0.82rem;
+  color:#6b7280;
+  min-height:18px;
+  margin: -10px 0 14px;
+  font-style: italic;
+  transition: color 0.15s;
+"></p>
+        <span data-value="1" onclick="selectStar(1)" title="1 – Poor">★</span>
+        <span data-value="2" onclick="selectStar(2)" title="2 – Fair">★</span>
+        <span data-value="3" onclick="selectStar(3)" title="3 – Good">★</span>
+        <span data-value="4" onclick="selectStar(4)" title="4 – Very Good">★</span>
+        <span data-value="5" onclick="selectStar(5)" title="5 – Excellent">★</span>
+      </div>
+      <textarea id="feedbackComment" placeholder="Optional: describe your experience..."></textarea>
+      <div id="feedbackError" style="color:#dc3545;font-size:0.85rem;margin-bottom:10px;display:none;"></div>
+      <div class="feedback-btn-row">
+        <button class="btn-feedback-cancel" onclick="closeFeedbackModal()">Cancel</button>
+        <button class="btn-feedback-submit" onclick="submitFeedback()">Submit Feedback</button>
+      </div>
+    </div>
+    <div id="feedbackThankyouSection" style="display:none;">
+      <div class="feedback-thankyou">
+        <span class="big-check">✅</span>
+        <strong>Thank you for your feedback!</strong>
+        <p style="color:#374151;margin-top:8px;font-size:0.9rem;">Your rating helps us improve municipal services.</p>
+      </div>
+      <div class="feedback-btn-row" style="justify-content:center;margin-top:8px;">
+        <button class="btn-feedback-cancel" onclick="closeFeedbackModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="feedbackToast" class="toast">✅ Feedback saved!</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script type="module" src="dashboard.js"></script>

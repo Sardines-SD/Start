@@ -503,6 +503,59 @@ app.delete("/api/me", requireAuth, async (req, res) => {
   }
 });
 
+
+
+// ── SUBMIT SATISFACTION FEEDBACK (resident only) ──────────────────────────────
+app.post("/api/requests/:id/feedback", requireAuth, async (req, res) => {
+  const { id } = req.params;
+  const { rating, comment } = req.body;
+
+  // Validate rating range
+  if (!rating || !Number.isInteger(Number(rating)) || Number(rating) < 1 || Number(rating) > 5) {
+    return res.status(400).json({ error: "Rating must be an integer between 1 and 5" });
+  }
+
+  try {
+    const docRef  = db.collection("requests").doc(id);
+    const docSnap = await docRef.get();
+
+    if (!docSnap.exists) {
+      return res.status(404).json({ error: "Request not found" });
+    }
+
+    const data = docSnap.data();
+
+    // Only the original submitter may leave feedback
+    if (data.userId !== req.user.uid) {
+      return res.status(403).json({ error: "Forbidden – only the original requester can leave feedback" });
+    }
+
+    // Request must be resolved
+    if (data.status !== "resolved") {
+      return res.status(400).json({ error: "Feedback can only be submitted for resolved requests" });
+    }
+
+    // Prevent double submission
+    if (data.feedbackSubmitted === true) {
+      return res.status(400).json({ error: "Feedback has already been submitted for this request" });
+    }
+
+    await docRef.update({
+      feedbackRating:    Number(rating),
+      feedbackComment:   comment || "",
+      feedbackSubmitted: true,
+      feedbackAt:        admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    res.json({ message: "Feedback submitted successfully" });
+  } catch (err) {
+    console.error("Error saving feedback:", err);
+    res.status(500).json({ error: "Failed to save feedback" });
+  }
+});
+
+
+
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
