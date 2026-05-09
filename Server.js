@@ -356,13 +356,17 @@ app.patch("/api/requests/:id", requireAuth, async (req, res) => {
     }
 
     const docRef  = db.collection("requests").doc(id);
-    const docSnap = await docRef.get();
+const docSnap = await docRef.get();
 
-    if (!docSnap.exists) {
-      return res.status(404).json({ error: "Report not found" });
-    }
+if (!docSnap.exists) {
+  return res.status(404).json({ error: "Report not found" });
+}
 
-    await docRef.update({ status });
+if (docSnap.data().status === "resolved") {
+  return res.status(400).json({ error: "This request is resolved and cannot be changed." });
+}
+
+await docRef.update({ status });
 
     // ── Send email notification to the reporter ──────────────────────────────
     const report = docSnap.data();
