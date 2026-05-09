@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile - Municipal Service Portal</title>
+  <link rel="stylesheet" href="styler.css">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-color: #5a7fa8;
+      background-image:
+        linear-gradient(rgba(60, 90, 130, 0.60), rgba(60, 90, 130, 0.60)),
+        url('https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Johannesburg_skyline_from_ponte.jpg/1280px-Johannesburg_skyline_from_ponte.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+    }
+
+    header {
+      background: transparent;
+      box-shadow: none;
+      padding: 36px 20px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .header-brand h1 {
+      margin: 0;
+      font-size: 26px;
+      font-weight: 700;
+      color: #ffffff;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      text-align: left;
+      line-height: 1.3;
+    }
+
+    .header-sub {
+      color: #ddeeff;
+      font-size: 15px;
+      margin: 0;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .header-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    header button {
+      padding: 9px 22px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-back {
+      background: white;
+      color: #2b5fa8;
+    }
+
+    .btn-back:hover {
+      background: #e6f0ff;
+      transform: translateY(-2px);
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 28px 20px 40px;
+      margin: 0;
+      max-width: 100%;
+      gap: 24px;
+    }
+
+    section {
+      background: rgba(225, 235, 250, 0.93);
+      border-radius: 12px;
+      padding: 32px 40px 28px;
+      width: 100%;
+      max-width: 600px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+      margin-bottom: 0;
+      transform: none;
+    }
+
+    section:hover {
+      transform: none;
+    }
+
+    section h2 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1a2a3a;
+      margin: 0 0 24px;
+      text-align: center;
+      border-bottom: 2px solid #2b5fa8;
+      padding-bottom: 12px;
+    }
+
+    .profile-avatar {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .avatar-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #2b5fa8, #1a3f7a);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      color: white;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      color: #2a3a4a;
+      margin-bottom: 8px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #c8d4e0;
+      background-color: #f5f8fc;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+
+    input:focus {
+      border-color: #2b5fa8;
+      outline: none;
+      box-shadow: 0 0 5px rgba(43,95,168,0.3);
+    }
+
+    .readonly-field {
+      background-color: #e9ecef;
+      color: #6c757d;
+      cursor: not-allowed;
+    }
+
+    .hint-text {
+      font-size: 12px;
+      color: #6c757d;
+      margin-top: 5px;
+      display: block;
+    }
+
+    .btn-save {
+      background: linear-gradient(135deg, #2b5fa8, #1a3f7a);
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .btn-save:hover {
+      background: linear-gradient(135deg, #1e4a8a, #12306b);
+      transform: translateY(-2px);
+    }
+
+    .warning-banner {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      color: #856404;
+      font-size: 14px;
+    }
+
+    output {
+      display: block;
+      margin-top: 16px;
+      padding: 10px;
+      border-radius: 6px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    footer {
+      background: transparent;
+      box-shadow: none;
+      padding: 20px;
+    }
+
+    footer p {
+      text-align: center;
+      color: #d8e6f5;
+      font-size: 13px;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-brand">
+    <svg width="58" height="58" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
+      <path d="M36 4 L64 16 L64 38 C64 54 50 65 36 70 C22 65 8 54 8 38 L8 16 Z" fill="#2b5fa8" stroke="#a8c4e8" stroke-width="1.5"/>
+      <path d="M36 10 L58 20 L58 38 C58 51 46 61 36 66 C26 61 14 51 14 38 L14 20 Z" fill="#1e4a8a"/>
+      <rect x="24" y="28" width="24" height="16" rx="3" fill="none" stroke="#ffffff" stroke-width="2"/>
+      <rect x="30" y="22" width="12" height="10" rx="3" fill="none" stroke="#ffffff" stroke-width="2"/>
+      <circle cx="36" cy="36" r="2.5" fill="#ffffff"/>
+    </svg>
+    <h1>Municipal Service Delivery<br>Reporting Portal</h1>
+  </div>
+  <p class="header-sub" id="welcomeMsg"></p>
+  <div class="header-buttons">
+    <button class="btn-back" onclick="goBack()">← Back to Dashboard</button>
+  </div>
+</header>
+
+<main>
+  <section>
+    <h2>My Profile</h2>
+
+    <div id="warningBanner" class="warning-banner" style="display: none;">
+      ⚠️ Please complete your profile by entering your ward number to continue using the portal.
+    </div>
+
+    <div class="profile-avatar">
+      <div class="avatar-icon">
+        👤
+      </div>
+    </div>
+
+    <form id="profileForm">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="profileEmail" class="readonly-field" readonly>
+      </div>
+
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="profileUsername" placeholder="Enter username">
+      </div>
+
+      <div class="form-group">
+        <label>Ward Number <span style="color:#dc3545;">*</span></label>
+        <input type="number" id="profileWard" placeholder="Enter your ward number" step="1" min="1">
+        <small class="hint-text">Example: 73, 42, 105 (numbers only, no letters)</small>
+      </div>
+
+      <div class="form-group">
+        <label>Account Type</label>
+        <input type="text" id="profileRole" class="readonly-field" readonly>
+      </div>
+
+      <div class="form-group">
+        <label>Member Since</label>
+        <input type="text" id="profileCreatedAt" class="readonly-field" readonly>
+      </div>
+
+      <div class="form-group">
+        <label>Sign-in Method</label>
+        <input type="text" id="profileProvider" class="readonly-field" readonly>
+      </div>
+
+      <button type="submit" class="btn-save">Save Changes</button>
+    </form>
+
+    <output id="profileFeedback"></output>
+  </section>
+</main>
+
+<footer>
+  <p>&copy; 2026 Municipal Service Delivery Portal</p>
+</footer>
+
+<script type="module" src="profilePage.js"></script>
+</body>
+</html>

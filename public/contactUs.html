@@ -47,7 +47,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 30px;
-      margin-bottom: 40px;
+      margin-bottom: 20px;
     }
 
     .info-item {
@@ -65,38 +65,6 @@
       color: #ffd700;
     }
 
-    .contact-form input,
-    .contact-form textarea {
-      width: 100%;
-      padding: 12px;
-      margin: 10px 0;
-      border: none;
-      border-radius: 8px;
-      background: rgba(255,255,255,0.9);
-      font-family: inherit;
-    }
-
-    .contact-form textarea {
-      resize: vertical;
-      min-height: 120px;
-    }
-
-    .contact-form button {
-      background: #ffd700;
-      color: #1a2a3a;
-      padding: 12px 30px;
-      border: none;
-      border-radius: 30px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .contact-form button:hover {
-      background: #fff;
-      transform: scale(1.02);
-    }
-
     .back-btn {
       display: inline-block;
       margin-top: 30px;
@@ -106,6 +74,7 @@
       text-decoration: none;
       border-radius: 30px;
       transition: all 0.3s ease;
+      text-align: center;
     }
 
     .back-btn:hover {
@@ -118,16 +87,12 @@
       background: rgba(0,0,0,0.3);
       margin-top: 40px;
     }
-
-    .success-message {
-      color: #90EE90;
-    }
   </style>
 </head>
 <body>
   <div class="contact-header">
     <h1>Contact Us</h1>
-    <p>We'd love to hear from you</p>
+    <p>Get in touch with us</p>
   </div>
 
   <div class="container">
@@ -152,18 +117,6 @@
         </div>
       </div>
 
-      <div class="contact-form">
-        <h3 style="margin-bottom:20px; text-align:center;">Send us a message</h3>
-        <form id="contactForm">
-          <input type="text" id="contactName" placeholder="Your Name" required>
-          <input type="email" id="contactEmail" placeholder="Your Email" required>
-          <input type="text" id="contactSubject" placeholder="Subject" required>
-          <textarea id="contactMessage" placeholder="Your Message" required></textarea>
-          <button type="submit">Send Message</button>
-        </form>
-        <p id="contactFeedback" style="margin-top:20px; text-align:center;"></p>
-      </div>
-
       <div style="text-align:center;">
         <a href="index.html" class="back-btn">← Back to Login</a>
       </div>
@@ -171,20 +124,7 @@
   </div>
 
   <footer>
-    <p>&copy; 2026 Municipal Service Delivery Portal | We're here to help</p>
+    <p>&copy; 2026 Municipal Service Delivery Portal | Contact Us</p>
   </footer>
-
-  <script>
-    document.getElementById("contactForm").addEventListener("submit", function(e) {
-      e.preventDefault();
-      const feedback = document.getElementById("contactFeedback");
-      feedback.textContent = "Thank you! Your message has been sent. We'll respond within 48 hours.";
-      feedback.className = "success-message";
-      this.reset();
-      setTimeout(() => {
-        feedback.textContent = "";
-      }, 5000);
-    });
-  </script>
 </body>
 </html>

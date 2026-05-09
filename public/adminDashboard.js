@@ -68,21 +68,23 @@ window.logout = async function () {
 // ── LOGOUT BUTTON ESCAPE ANIMATION ───────────────────────────────────────────
 let logoutClickCount = 0;
 
-document.getElementById("logoutBtn").addEventListener("click", async () => {
-  logoutClickCount++;
+const logoutBtn = document.getElementById("logoutBtn");
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", async () => {
+    logoutClickCount++;
 
-  if (logoutClickCount === 1) {
-    // First click — slide right
-    document.getElementById("logoutBtn").style.transform = "translate(120px,80px)";
-  } else if (logoutClickCount === 2) {
-    // Second click — slide back to original
-    document.getElementById("logoutBtn").style.transform = "translate(0px,0px)";
-  } else {
-    // Third click — actually log out
-    await logout();
-  }
-});
-
+    if (logoutClickCount === 1) {
+      // First click — slide right
+      logoutBtn.style.transform = "translate(120px,80px)";
+    } else if (logoutClickCount === 2) {
+      // Second click — slide back to original
+      logoutBtn.style.transform = "translate(0px,0px)";
+    } else {
+      // Third click — actually log out
+      await logout();
+    }
+  });
+}
 
 window.switchTab = function (tab) {
   document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
@@ -117,7 +119,7 @@ document.addEventListener("keydown", function (e) {
 
 async function loadAllRequests() {
   const table = document.getElementById("requestsTable");
-  table.innerHTML = "<tr><td colspan='10'>Loading...</td></tr>";
+  table.innerHTML = "<tr><td colspan='10'>Loading...";
 
   try {
     const token = await getFreshToken();
@@ -134,7 +136,7 @@ async function loadAllRequests() {
     updateStats(allRequests);
     filterRequests();
   } catch {
-    table.innerHTML = "<tr><td colspan='10'>Failed to load requests.</td></tr>";
+    table.innerHTML = "<tr><td colspan='10'>Failed to load requests.";
   }
 }
 
@@ -142,7 +144,7 @@ function renderRequestsTable(data) {
   const table = document.getElementById("requestsTable");
 
   if (!data.length) {
-    table.innerHTML = "<tr><td colspan='10'>No requests found.</td></tr>";
+    table.innerHTML = "<td><td colspan='10'>No requests found.";
     return;
   }
 
@@ -160,8 +162,8 @@ function renderRequestsTable(data) {
         <td>${escapeHtml(req.userEmail ?? "-")}</td>
         <td>${escapeHtml(req.category)}</td>
         <td>${escapeHtml(req.description)}</td>
-        <td>${req.ward || '—'}</td>
-        <td>${req.municipality || '—'}</td>
+        <td>${req.ward || '-'}</td>
+        <td>${req.municipality || '-'}</td>
         <td>${escapeHtml(req.createdAt ?? "-")}</td>
         <td><span class="badge badge-${statusClass}">${escapeHtml(req.status)}</span></td>
         <td class="proof-cell">${imageHtml}</td>
@@ -188,7 +190,7 @@ function updateStats(data) {
 window.filterRequests = function () {
   const s = document.getElementById("filterStatus").value;
   const c = document.getElementById("filterCategory").value;
-  const q = document.getElementById("searchInput").value.trim().toLowerCase();
+  const q = document.getElementById("searchInput")?.value.trim().toLowerCase() || "";
 
   const filtered = allRequests.filter(r => {
     const matchesStatus = !s || r.status === s;
@@ -238,7 +240,7 @@ window.updateStatus = async function (selectEl) {
 
 async function loadAllUsers() {
   const table = document.getElementById("usersTable");
-  table.innerHTML = "<tr><td colspan='6'>Loading...</td></tr>";
+  table.innerHTML = "<tr><td colspan='7'>Loading...";
 
   try {
     const token = await getFreshToken();
@@ -255,7 +257,7 @@ async function loadAllUsers() {
     document.getElementById("userCount").textContent = users.length;
 
     if (!users.length) {
-      table.innerHTML = "<tr><td colspan='6'>No users found.</td></tr>";
+      table.innerHTML = "<tr><td colspan='7'>No users found.";
       return;
     }
 
@@ -263,8 +265,8 @@ async function loadAllUsers() {
       <tr>
         <td>${escapeHtml(u.username ?? "-")}</td>
         <td>${escapeHtml(u.email)}</td>
-        <td>${u.ward || '—'}</td>
-	      <td>${u.municipality || '—'}</td>
+        <td>${u.ward || '-'}</td>
+        <td>${u.municipality || '-'}</td>
         <td><span class="badge badge-${escapeHtml(u.role)}">${escapeHtml(u.role)}</span></td>
         <td>
           <select class="role-select" data-uid="${escapeHtml(u.uid)}" onchange="updateRole(this)">
@@ -279,10 +281,10 @@ async function loadAllUsers() {
             ${u.uid === currentAdminId ? 'Cannot delete self' : 'Delete'}
           </button>
         </td>
-      </tr>
+      </table>
     `).join("");
   } catch {
-    table.innerHTML = "<tr><td colspan='6'>Failed to load users.</td></tr>";
+    table.innerHTML = "<tr><td colspan='7'>Failed to load users.";
   }
 }
 
