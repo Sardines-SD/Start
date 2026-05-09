@@ -187,7 +187,8 @@ if (req.status === 'resolved' && req.feedbackSubmitted) {
   const tip    = req.feedbackComment ? escapeHtml(req.feedbackComment) : 'No comment';
   adminFeedbackCell = `
     <td>
-      <span class="feedback-given star-gold" title="${tip}">${filled}</span><span class="feedback-given">${empty}</span>
+      <span class="feedback-given star-gold" title="${tip}">${filled}</span>
+	<span class="feedback-given">${empty} </span>
       <br><small style="color:#9ca3af">${req.feedbackComment ? escapeHtml(req.feedbackComment.substring(0,40)) + (req.feedbackComment.length > 40 ? '…' : '') : ''}</small>
     </td>`;
 } else if (req.status === 'resolved') {
