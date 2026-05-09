@@ -195,7 +195,7 @@ if (req.status === 'resolved' && req.feedbackSubmitted) {
         <td class="proof-cell">${imageHtml}</td>
         <td>
           ${req.status === "resolved"
-            ? `<span style="font-size:0.8rem;color:#155724;background:#d4edda;padding:4px 10px;border-radius:6px;font-weight:600;">🔒 Locked</span>`
+            ? `<span style="font-size:0.8rem;color:#155724;background:#d4edda;padding:4px 10px;border-radius:6px;font-weight:600;">Resolved</span>`
             : `<select class="status-select" data-id="${escapeHtml(req.firestoreId)}" onchange="updateStatus(this)">
                 <option value="">Change...</option>
                 <option value="pending" ${req.status === "pending" ? "selected" : ""}>Pending</option>
