@@ -1,4 +1,71 @@
 // ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 1 HELPERS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── US1 & US2: Login validation ───────────────────────────────────────────────
+function isValidEmail(email) {
+  if (!email || typeof email !== 'string') return false;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email.trim());
+}
+
+function isValidLoginCredentials(email, password) {
+  return isValidEmail(email) && isValidPassword(password);
+}
+
+function isResidentRole(role) {
+  return role === 'user';
+}
+
+function isStaffRole(role) {
+  return role === 'admin' || role === 'worker';
+}
+
+// ── US3: Login error handling ─────────────────────────────────────────────────
+function getLoginErrorMessage(errorCode) {
+  const messages = {
+    'auth/user-not-found':     'No account found with this email address.',
+    'auth/wrong-password':     'Incorrect password. Please try again.',
+    'auth/invalid-email':      'Please enter a valid email address.',
+    'auth/user-disabled':      'This account has been disabled.',
+    'auth/too-many-requests':  'Too many failed attempts. Please try again later.',
+    'auth/invalid-credential': 'Invalid email or password.',
+  };
+  return messages[errorCode] || 'Login failed. Please try again.';
+}
+
+function isKnownErrorCode(errorCode) {
+  const known = [
+    'auth/user-not-found',
+    'auth/wrong-password',
+    'auth/invalid-email',
+    'auth/user-disabled',
+    'auth/too-many-requests',
+    'auth/invalid-credential',
+  ];
+  return known.includes(errorCode);
+}
+
+// ── US4: Registration validation ──────────────────────────────────────────────
+function isValidRegistration(email, password, confirmPassword) {
+  return (
+    isValidEmail(email) &&
+    isValidPassword(password) &&
+    password === confirmPassword
+  );
+}
+
+function isValidVerificationCode(code) {
+  return typeof code === 'string' &&
+         code.trim().length === 6 &&
+         /^\d{6}$/.test(code.trim());
+}
+
+function isValidRole(role) {
+  return ['user', 'worker', 'admin'].includes(role);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // SPRINT 2 HELPERS
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -12,12 +79,23 @@ function isValidReport(report) {
   return Boolean(report.category && report.description);
 }
 
-// ── US2: Delete Report ────────────────────────────────────────────────────────
+// ── US2: Delete Account ───────────────────────────────────────────────────────
+function canDeleteAccount(requestingUid, targetUid, role) {
+  if (role === 'admin' && requestingUid !== targetUid) return true;
+  if (requestingUid === targetUid) return true;
+  return false;
+}
+
+function adminCannotDeleteSelf(requestingUid, targetUid) {
+  return requestingUid === targetUid;
+}
+
+// ── US3 (Sprint 2): Delete Report ─────────────────────────────────────────────
 function canDelete(reportUserId, requestingUid, role) {
   return reportUserId === requestingUid || role === 'admin';
 }
 
-// ── US3: Filter and Search ────────────────────────────────────────────────────
+// ── US4 (Sprint 2): Filter and Search ─────────────────────────────────────────
 function filterByStatus(reports, status) {
   if (!status) return reports;
   return reports.filter(r => r.status === status);
@@ -37,7 +115,7 @@ function filterByCategory(reports, category) {
   return reports.filter(r => r.category === category);
 }
 
-// ── US4: Update Report Status ─────────────────────────────────────────────────
+// ── US5 (Sprint 2): Update Report Status ──────────────────────────────────────
 function isValidStatus(status) {
   const valid = ['pending', 'in-progress', 'resolved'];
   return valid.includes(status);
@@ -47,7 +125,7 @@ function canUpdateStatus(role) {
   return role === 'admin' || role === 'worker';
 }
 
-// ── US5: View All Reports ─────────────────────────────────────────────────────
+// ── View All Reports ──────────────────────────────────────────────────────────
 function canSeeAllReports(role) {
   return role === 'admin' || role === 'worker';
 }
@@ -91,7 +169,23 @@ function getStatusClass(status) {
   return 'pending';
 }
 
-// ── Geolocation / Ward Detection ──────────────────────────────────────────────
+// ── Email Notification ────────────────────────────────────────────────────────
+function shouldSendEmailNotification(newStatus) {
+  return ['in-progress', 'resolved'].includes(newStatus);
+}
+
+function getEmailSubject(status, category) {
+  const labels = {
+    'in-progress': 'Your report is being worked on',
+    'resolved':    'Your report has been resolved',
+  };
+  return `[FixMyCity] ${labels[status] || 'Report Update'}: ${category}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GEOLOCATION HELPERS (Sprint 3 US1)
+// ═══════════════════════════════════════════════════════════════════════════════
+
 function isValidCoordinates(lat, lng) {
   return (
     typeof lat === 'number' &&
@@ -147,7 +241,7 @@ function reportHasGeolocation(report) {
 // SPRINT 3 HELPERS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// ── US1: Public Dashboard ─────────────────────────────────────────────────────
+// ── US2: Public Dashboard ─────────────────────────────────────────────────────
 function isPublicReport(report) {
   return ['pending', 'in-progress', 'resolved'].includes(report.status);
 }
@@ -157,7 +251,7 @@ function stripSensitiveFields(report) {
   return publicData;
 }
 
-// ── US2: Analytics ────────────────────────────────────────────────────────────
+// ── US3: Analytics ────────────────────────────────────────────────────────────
 function calcVolumeByCategory(reports) {
   const result = {};
   reports.forEach(r => {
@@ -192,17 +286,17 @@ function calcResolutionRate(reports) {
   return Math.round((resolved / reports.length) * 100);
 }
 
-// ── US3: Assign Request ───────────────────────────────────────────────────────
+// ── US4: Assign Request ───────────────────────────────────────────────────────
 function canAssignRequest(role) {
   return role === 'admin';
 }
 
-// ── US4: Worker Claim ─────────────────────────────────────────────────────────
+// ── US5: Worker Claim ─────────────────────────────────────────────────────────
 function canClaimRequest(role) {
   return role === 'worker' || role === 'admin';
 }
 
-// ── US5: Satisfaction Feedback ────────────────────────────────────────────────
+// ── US6: Satisfaction Feedback ────────────────────────────────────────────────
 function isValidRating(rating) {
   return Number.isInteger(rating) && rating >= 1 && rating <= 5;
 }
@@ -227,7 +321,7 @@ function formatFeedback(rating, comment) {
   };
 }
 
-// ── US6: Priority Levels (Mid-Sprint) ─────────────────────────────────────────
+// ── Analytics / Priority ──────────────────────────────────────────────────────
 function isValidPriority(priority) {
   const valid = ['low', 'medium', 'high'];
   return valid.includes(priority);
@@ -271,9 +365,21 @@ function generateFullCSV(reports) {
 // EXPORTS
 // ═══════════════════════════════════════════════════════════════════════════════
 module.exports = {
+  // Sprint 1
+  isValidEmail,
+  isValidLoginCredentials,
+  isResidentRole,
+  isStaffRole,
+  getLoginErrorMessage,
+  isKnownErrorCode,
+  isValidRegistration,
+  isValidVerificationCode,
+  isValidRole,
   // Sprint 2
   isValidCategory,
   isValidReport,
+  canDeleteAccount,
+  adminCannotDeleteSelf,
   canDelete,
   filterByStatus,
   filterByKeyword,
@@ -287,6 +393,8 @@ module.exports = {
   isValidImageType,
   escapeHtml,
   getStatusClass,
+  shouldSendEmailNotification,
+  getEmailSubject,
   // Geolocation
   isValidCoordinates,
   isWithinSouthAfrica,
