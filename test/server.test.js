@@ -903,3 +903,469 @@ describe('Sprint 3 — Feature Tests', () => {
 
 });
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// APP.JS COVERAGE TESTS — These tests measure coverage of actual app logic
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('App.js — Sprint 1 Auth Logic', () => {
+
+  test('valid login input is accepted', () => {
+    const result = validateLoginInput('user@test.com', 'password123');
+    expect(result.valid).toBe(true);
+    expect(result.error).toBeNull();
+  });
+
+  test('missing email returns error', () => {
+    const result = validateLoginInput('', 'password123');
+    expect(result.valid).toBe(false);
+    expect(result.error).toBeTruthy();
+  });
+
+  test('missing password returns error', () => {
+    const result = validateLoginInput('user@test.com', '');
+    expect(result.valid).toBe(false);
+  });
+
+  test('invalid email format returns error', () => {
+    const result = validateLoginInput('notanemail', 'password123');
+    expect(result.valid).toBe(false);
+  });
+
+  test('short password returns error', () => {
+    const result = validateLoginInput('user@test.com', '123');
+    expect(result.valid).toBe(false);
+  });
+
+  test('valid registration is accepted', () => {
+    const result = validateRegistrationInput('user@test.com', 'password123', 'password123');
+    expect(result.valid).toBe(true);
+  });
+
+  test('mismatched passwords fail registration', () => {
+    const result = validateRegistrationInput('user@test.com', 'password123', 'different');
+    expect(result.valid).toBe(false);
+    expect(result.error).toBe('Passwords do not match');
+  });
+
+  test('invalid email fails registration', () => {
+    const result = validateRegistrationInput('notvalid', 'password123', 'password123');
+    expect(result.valid).toBe(false);
+  });
+
+  test('known error code returns specific message', () => {
+    expect(getLoginErrorMessage('auth/user-not-found')).toBe('No account found with this email address.');
+    expect(getLoginErrorMessage('auth/wrong-password')).toBe('Incorrect password. Please try again.');
+    expect(getLoginErrorMessage('auth/invalid-email')).toBe('Please enter a valid email address.');
+    expect(getLoginErrorMessage('auth/user-disabled')).toBe('This account has been disabled.');
+    expect(getLoginErrorMessage('auth/too-many-requests')).toBe('Too many failed attempts. Please try again later.');
+    expect(getLoginErrorMessage('auth/invalid-credential')).toBe('Invalid email or password.');
+  });
+
+  test('unknown error code returns fallback message', () => {
+    expect(getLoginErrorMessage('auth/unknown')).toBe('Login failed. Please try again.');
+  });
+
+  test('valid 6-digit code is accepted', () => {
+    expect(validateVerificationCode('123456')).toBe(true);
+  });
+
+  test('code with letters is rejected', () => {
+    expect(validateVerificationCode('abc123')).toBe(false);
+  });
+
+  test('short code is rejected', () => {
+    expect(validateVerificationCode('1234')).toBe(false);
+  });
+
+  test('empty code is rejected', () => {
+    expect(validateVerificationCode('')).toBe(false);
+    expect(validateVerificationCode(null)).toBe(false);
+  });
+
+});
+
+describe('App.js — Sprint 2 Request Logic', () => {
+
+  test('valid create request is accepted', () => {
+    const result = validateCreateRequest({
+      category: 'Pothole', description: 'Big hole on Main St'
+    });
+    expect(result.valid).toBe(true);
+  });
+
+  test('missing category fails validation', () => {
+    const result = validateCreateRequest({ description: 'test' });
+    expect(result.valid).toBe(false);
+    expect(result.error).toBeTruthy();
+  });
+
+  test('missing description fails validation', () => {
+    const result = validateCreateRequest({ category: 'Pothole' });
+    expect(result.valid).toBe(false);
+  });
+
+  test('invalid category fails validation', () => {
+    const result = validateCreateRequest({ category: 'Aliens', description: 'test' });
+    expect(result.valid).toBe(false);
+  });
+
+  test('oversized image fails validation', () => {
+    const bigImage = 'x'.repeat(16 * 1024 * 1024);
+    const result = validateCreateRequest({
+      category: 'Pothole', description: 'test', image: bigImage
+    });
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain('too large');
+  });
+
+  test('valid status update is accepted', () => {
+    expect(validateStatusUpdate('pending').valid).toBe(true);
+    expect(validateStatusUpdate('in-progress').valid).toBe(true);
+    expect(validateStatusUpdate('resolved').valid).toBe(true);
+  });
+
+  test('invalid status update is rejected', () => {
+    expect(validateStatusUpdate('done').valid).toBe(false);
+    expect(validateStatusUpdate('').valid).toBe(false);
+  });
+
+  test('valid role update is accepted', () => {
+    expect(validateRoleUpdate('user').valid).toBe(true);
+    expect(validateRoleUpdate('worker').valid).toBe(true);
+    expect(validateRoleUpdate('admin').valid).toBe(true);
+  });
+
+  test('invalid role update is rejected', () => {
+    expect(validateRoleUpdate('superadmin').valid).toBe(false);
+  });
+
+  test('owner can delete their report', () => {
+    expect(canUserDelete('uid_A', 'uid_A', 'user')).toBe(true);
+  });
+
+  test('non-owner cannot delete report', () => {
+    expect(canUserDelete('uid_A', 'uid_B', 'user')).toBe(false);
+  });
+
+  test('admin can delete any report', () => {
+    expect(canUserDelete('uid_A', 'uid_B', 'admin')).toBe(true);
+  });
+
+  test('admin and worker can update status', () => {
+    expect(canUserUpdateStatus('admin')).toBe(true);
+    expect(canUserUpdateStatus('worker')).toBe(true);
+    expect(canUserUpdateStatus('user')).toBe(false);
+  });
+
+  test('admin and worker can see all reports', () => {
+    expect(canUserSeeAllReports('admin')).toBe(true);
+    expect(canUserSeeAllReports('worker')).toBe(true);
+    expect(canUserSeeAllReports('user')).toBe(false);
+  });
+
+  test('admin can delete another users account', () => {
+    expect(canAdminDeleteUser('admin_uid', 'user_uid', 'admin')).toBe(true);
+  });
+
+  test('admin cannot delete their own account', () => {
+    expect(canAdminDeleteUser('admin_uid', 'admin_uid', 'admin')).toBe(false);
+  });
+
+  test('non-admin cannot delete accounts', () => {
+    expect(canAdminDeleteUser('user_uid', 'other_uid', 'user')).toBe(false);
+  });
+
+  test('applyRequestFilters filters by status', () => {
+    const reports = [
+      { category: 'Pothole', description: 'hole', status: 'pending'     },
+      { category: 'Water',   description: 'pipe', status: 'resolved'    },
+      { category: 'Waste',   description: 'bin',  status: 'in-progress' },
+    ];
+    expect(applyRequestFilters(reports, 'pending', '').length).toBe(1);
+    expect(applyRequestFilters(reports, 'resolved', '').length).toBe(1);
+  });
+
+  test('applyRequestFilters filters by search keyword', () => {
+    const reports = [
+      { category: 'Pothole', description: 'big hole', status: 'pending' },
+      { category: 'Water',   description: 'burst pipe', status: 'resolved' },
+    ];
+    expect(applyRequestFilters(reports, '', 'pipe').length).toBe(1);
+    expect(applyRequestFilters(reports, '', 'hole').length).toBe(1);
+    expect(applyRequestFilters(reports, '', 'xyz').length).toBe(0);
+  });
+
+  test('applyRequestFilters with no filters returns all', () => {
+    const reports = [
+      { category: 'Pothole', description: 'hole', status: 'pending'  },
+      { category: 'Water',   description: 'pipe', status: 'resolved' },
+    ];
+    expect(applyRequestFilters(reports, '', '').length).toBe(2);
+  });
+
+  test('email notification sent for in-progress', () => {
+    expect(shouldNotifyOnStatusChange('in-progress')).toBe(true);
+  });
+
+  test('email notification sent for resolved', () => {
+    expect(shouldNotifyOnStatusChange('resolved')).toBe(true);
+  });
+
+  test('email notification not sent for pending', () => {
+    expect(shouldNotifyOnStatusChange('pending')).toBe(false);
+  });
+
+  test('email subject includes category and status', () => {
+    const subject = buildStatusEmailSubject('resolved', 'Pothole');
+    expect(subject).toContain('Pothole');
+    expect(subject).toContain('resolved');
+  });
+
+  test('email subject for in-progress is correct', () => {
+    const subject = buildStatusEmailSubject('in-progress', 'Water');
+    expect(subject).toContain('Water');
+  });
+
+});
+
+describe('App.js — Sprint 3 Geolocation Logic', () => {
+
+  test('valid SA coordinates pass validation', () => {
+    expect(validateCoordinates(-26.2041, 28.0473).valid).toBe(true);
+  });
+
+  test('latitude above 90 fails validation', () => {
+    const result = validateCoordinates(91, 28);
+    expect(result.valid).toBe(false);
+    expect(result.error).toBeTruthy();
+  });
+
+  test('latitude below -90 fails validation', () => {
+    expect(validateCoordinates(-91, 28).valid).toBe(false);
+  });
+
+  test('longitude above 180 fails validation', () => {
+    expect(validateCoordinates(-26, 181).valid).toBe(false);
+  });
+
+  test('longitude below -180 fails validation', () => {
+    expect(validateCoordinates(-26, -181).valid).toBe(false);
+  });
+
+  test('non-numeric coordinates fail validation', () => {
+    expect(validateCoordinates('abc', 28).valid).toBe(false);
+    expect(validateCoordinates(-26, 'xyz').valid).toBe(false);
+  });
+
+  test('Johannesburg is within South Africa', () => {
+    expect(isCoordinateWithinSouthAfrica(-26.2041, 28.0473)).toBe(true);
+  });
+
+  test('Cape Town is within South Africa', () => {
+    expect(isCoordinateWithinSouthAfrica(-33.9249, 18.4241)).toBe(true);
+  });
+
+  test('London is outside South Africa', () => {
+    expect(isCoordinateWithinSouthAfrica(51.5074, -0.1278)).toBe(false);
+  });
+
+  test('buildLocationData creates correct structure', () => {
+    const result = buildLocationData(-26.2041, 28.0473, {
+      ward: 'Ward 5', wardNo: 5, municipality: 'CoJ', province: 'Gauteng'
+    });
+    expect(result.latitude).toBe(-26.2041);
+    expect(result.longitude).toBe(28.0473);
+    expect(result.ward).toBe('Ward 5');
+    expect(result.municipality).toBe('CoJ');
+    expect(result.province).toBe('Gauteng');
+  });
+
+  test('buildLocationData with null wardInfo returns nulls', () => {
+    const result = buildLocationData(-26.2041, 28.0473, null);
+    expect(result.ward).toBeNull();
+    expect(result.municipality).toBeNull();
+  });
+
+  test('formatWardDisplay with both values', () => {
+    expect(formatWardDisplay('Ward 5', 'CoJ')).toBe('Ward 5, CoJ');
+  });
+
+  test('formatWardDisplay with only ward', () => {
+    expect(formatWardDisplay('Ward 5', null)).toBe('Ward 5');
+  });
+
+  test('formatWardDisplay with only municipality', () => {
+    expect(formatWardDisplay(null, 'CoJ')).toBe('CoJ');
+  });
+
+  test('formatWardDisplay with neither returns unknown', () => {
+    expect(formatWardDisplay(null, null)).toBe('Location unknown');
+  });
+
+  test('sanitisePublicReport removes sensitive data', () => {
+    const result = sanitisePublicReport({
+      firestoreId: '1', category: 'Pothole', status: 'pending',
+      description: 'Big hole', userEmail: 'private@test.com',
+    });
+    expect(result).not.toHaveProperty('userEmail');
+    expect(result).toHaveProperty('category');
+  });
+
+  test('sanitisePublicReport truncates long descriptions', () => {
+    const result = sanitisePublicReport({
+      category: 'Water', status: 'pending',
+      description: 'x'.repeat(200),
+    });
+    expect(result.description.length).toBe(100);
+  });
+
+  test('pending report is visible to public', () => {
+    expect(isReportVisibleToPublic({ status: 'pending' })).toBe(true);
+  });
+
+  test('resolved report is visible to public', () => {
+    expect(isReportVisibleToPublic({ status: 'resolved' })).toBe(true);
+  });
+
+  test('draft report is not visible to public', () => {
+    expect(isReportVisibleToPublic({ status: 'draft' })).toBe(false);
+  });
+
+});
+
+describe('App.js — Sprint 3 Feature Logic', () => {
+
+  test('calculateAnalytics returns correct category counts', () => {
+    const requests = [
+      { category: 'Pothole',     status: 'pending',     assignedTo: null      },
+      { category: 'Pothole',     status: 'resolved',    assignedTo: 'worker1' },
+      { category: 'Water',       status: 'in-progress', assignedTo: 'worker1' },
+      { category: 'Electricity', status: 'resolved',    assignedTo: 'worker2' },
+    ];
+    const result = calculateAnalytics(requests);
+    expect(result.byCategory['Pothole']).toBe(2);
+    expect(result.byCategory['Water']).toBe(1);
+    expect(result.byStatus['pending']).toBe(1);
+    expect(result.byStatus['resolved']).toBe(2);
+    expect(result.resolutionRate).toBe(50);
+    expect(result.workerPerformance['worker1'].assigned).toBe(2);
+    expect(result.workerPerformance['worker2'].resolved).toBe(1);
+    expect(result.totalRequests).toBe(4);
+  });
+
+  test('calculateAnalytics handles empty array', () => {
+    const result = calculateAnalytics([]);
+    expect(result.totalRequests).toBe(0);
+    expect(result.resolutionRate).toBe(0);
+  });
+
+  test('valid priority passes validation', () => {
+    expect(validatePriority('low').valid).toBe(true);
+    expect(validatePriority('medium').valid).toBe(true);
+    expect(validatePriority('high').valid).toBe(true);
+  });
+
+  test('invalid priority fails validation', () => {
+    const result = validatePriority('urgent');
+    expect(result.valid).toBe(false);
+    expect(result.error).toBeTruthy();
+  });
+
+  test('only admin can set priority', () => {
+    expect(canSetPriority('admin')).toBe(true);
+    expect(canSetPriority('worker')).toBe(false);
+    expect(canSetPriority('user')).toBe(false);
+  });
+
+  test('only admin can assign requests to workers', () => {
+    expect(canAssignToWorker('admin')).toBe(true);
+    expect(canAssignToWorker('worker')).toBe(false);
+    expect(canAssignToWorker('user')).toBe(false);
+  });
+
+  test('worker and admin can claim requests', () => {
+    expect(canClaimRequest('worker')).toBe(true);
+    expect(canClaimRequest('admin')).toBe(true);
+    expect(canClaimRequest('user')).toBe(false);
+  });
+
+  test('valid feedback passes validation', () => {
+    const report = { userId: 'user_A', status: 'resolved', feedback: null };
+    expect(validateFeedback(4, report, 'user_A').valid).toBe(true);
+  });
+
+  test('rating of 0 fails feedback validation', () => {
+    const report = { userId: 'user_A', status: 'resolved', feedback: null };
+    expect(validateFeedback(0, report, 'user_A').valid).toBe(false);
+  });
+
+  test('rating of 6 fails feedback validation', () => {
+    const report = { userId: 'user_A', status: 'resolved', feedback: null };
+    const result = validateFeedback(6, report, 'user_A');
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain('between 1 and 5');
+  });
+
+  test('non-owner cannot submit feedback', () => {
+    const report = { userId: 'user_A', status: 'resolved', feedback: null };
+    const result = validateFeedback(4, report, 'user_B');
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain('own reports');
+  });
+
+  test('pending report cannot receive feedback', () => {
+    const report = { userId: 'user_A', status: 'pending', feedback: null };
+    const result = validateFeedback(4, report, 'user_A');
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain('resolved');
+  });
+
+  test('cannot submit feedback twice', () => {
+    const report = { userId: 'user_A', status: 'resolved', feedback: { rating: 5 } };
+    const result = validateFeedback(4, report, 'user_A');
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain('already been submitted');
+  });
+
+  test('buildCSVRow produces correct format', () => {
+    const row = buildCSVRow({
+      id: '1', category: 'Pothole', description: 'Big hole',
+      status: 'pending', priority: 'high', ward: 'Ward 5',
+      municipality: 'CoJ', userEmail: 'user@test.com', createdAt: '01/05/2026',
+    });
+    expect(row).toContain('Pothole');
+    expect(row).toContain('high');
+    expect(row).toContain('Ward 5');
+    expect(row).toContain('user@test.com');
+  });
+
+  test('buildCSVRow handles missing fields gracefully', () => {
+    const row = buildCSVRow({ id: '1' });
+    expect(typeof row).toBe('string');
+    expect(row).toContain('none');
+  });
+
+  test('buildCSVRow escapes quotes in description', () => {
+    const row = buildCSVRow({
+      id: '1', category: 'Water', description: 'Pipe "broken"',
+      status: 'pending', priority: 'low',
+    });
+    expect(row).toContain('""');
+  });
+
+  test('buildFullCSV includes header and all rows', () => {
+    const csv = buildFullCSV([
+      { id: '1', category: 'Pothole', description: 'hole', status: 'pending', priority: 'high', ward: 'W1', municipality: 'CoJ', userEmail: 'a@b.com', createdAt: '01/05/2026' },
+      { id: '2', category: 'Water',   description: 'pipe', status: 'resolved', priority: 'low', ward: 'W2', municipality: 'CoJ', userEmail: 'c@d.com', createdAt: '02/05/2026' },
+    ]);
+    expect(csv).toContain('Category');
+    expect(csv).toContain('Pothole');
+    expect(csv).toContain('Water');
+  });
+
+  test('buildFullCSV with empty array returns only header', () => {
+    const csv = buildFullCSV([]);
+    expect(csv).toBe('ID,Category,Description,Status,Priority,Ward,Municipality,Email,Created');
+  });
+
+});
