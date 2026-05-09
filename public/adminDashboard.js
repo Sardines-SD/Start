@@ -190,7 +190,8 @@ if (req.status === 'resolved' && req.feedbackSubmitted) {
   }
 	</td>
         <td>${escapeHtml(req.createdAt ?? "-")}</td>
-        <td><span class="badge badge-${statusClass}">${escapeHtml(req.status)}</span></td>
+       <td><span class="badge badge-${statusClass}">${escapeHtml(req.status)}</span></td>
+        ${adminFeedbackCell}
         <td class="proof-cell">${imageHtml}</td>
         <td>
           <select class="status-select" data-id="${escapeHtml(req.firestoreId)}" onchange="updateStatus(this)">
@@ -210,6 +211,14 @@ function updateStats(data) {
   document.getElementById("pendingCount").textContent = data.filter(r => r.status === "pending").length;
   document.getElementById("inprogressCount").textContent = data.filter(r => r.status === "in-progress").length;
   document.getElementById("resolvedCount").textContent = data.filter(r => r.status === "resolved").length;
+
+  const rated = data.filter(r => r.feedbackSubmitted && r.feedbackRating);
+  const avgEl = document.getElementById("avgRatingDisplay");
+  if (avgEl) {
+    avgEl.textContent = rated.length
+      ? (rated.reduce((sum, r) => sum + r.feedbackRating, 0) / rated.length).toFixed(1) + " / 5"
+      : "No ratings yet";
+  }
 }
 
 window.filterRequests = function () {
