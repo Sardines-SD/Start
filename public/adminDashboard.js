@@ -171,17 +171,14 @@ if (req.status === 'resolved' && req.feedbackSubmitted) {
 } else if (req.status === 'resolved') {
   adminFeedbackCell = `<td><small style="color:#9ca3af">Awaiting</small></td>`;
 }	
-
-
-
     return `
       <tr>
         <td>${escapeHtml(req.id)}</td>
         <td>${escapeHtml(req.userEmail ?? "-")}</td>
         <td>${escapeHtml(req.category)}</td>
         <td>${escapeHtml(req.description)}</td>
-        <td>${req.ward || '-'}</td>
-        <td>${req.municipality || '-'}</td>
+        <td>${req.ward || 'Unknown'}</td>
+        <td>${req.municipality || 'Unknown'}</td>
 	<td>${escapeHtml(req.address || '-')}</td>
 	<td>
   		${
@@ -194,26 +191,6 @@ if (req.status === 'resolved' && req.feedbackSubmitted) {
 	</td>
         <td>${escapeHtml(req.createdAt ?? "-")}</td>
         <td><span class="badge badge-${statusClass}">${escapeHtml(req.status)}</span></td>
-
-
-
-// Admin feedback display cell
-let adminFeedbackCell = '<td>—</td>';
-if (req.status === 'resolved' && req.feedbackSubmitted) {
-  const filled = '★'.repeat(req.feedbackRating || 0);
-  const empty  = '☆'.repeat(5 - (req.feedbackRating || 0));
-  const tip    = req.feedbackComment ? escapeHtml(req.feedbackComment) : 'No comment';
-  adminFeedbackCell = `
-    <td>
-      <span class="feedback-given star-gold" title="${tip}">${filled}</span>
-	<span class="feedback-given">${empty} </span>
-      <br><small style="color:#9ca3af">${req.feedbackComment ? escapeHtml(req.feedbackComment.substring(0,40)) + (req.feedbackComment.length > 40 ? '…' : '') : ''}</small>
-    </td>`;
-} else if (req.status === 'resolved') {
-  adminFeedbackCell = `<td><small style="color:#9ca3af">Awaiting</small></td>`;
-}	
-
-
         <td class="proof-cell">${imageHtml}</td>
         <td>
           <select class="status-select" data-id="${escapeHtml(req.firestoreId)}" onchange="updateStatus(this)">
