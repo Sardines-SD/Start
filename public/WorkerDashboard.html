@@ -68,21 +68,40 @@
       text-shadow: 0 1px 3px rgba(0,0,0,0.2);
     }
 
-    header button {
+    .header-buttons {
+      display: flex;
+      gap: 10px;
       margin-top: 8px;
+      justify-content: center;
+    }
+
+    header button {
       padding: 9px 22px;
       border: none;
       border-radius: 8px;
-      background: white;
-      color: #2b5fa8;
       font-weight: 700;
       font-size: 14px;
       cursor: pointer;
       transition: all 0.3s ease;
     }
 
-    header button:hover {
+    .btn-logout {
+      background: white;
+      color: #2b5fa8;
+    }
+
+    .btn-logout:hover {
       background: #e6f0ff;
+      transform: translateY(-2px);
+    }
+
+    .btn-profile {
+      background: #17a2b8;
+      color: white;
+    }
+
+    .btn-profile:hover {
+      background: #138496;
       transform: translateY(-2px);
     }
 
@@ -278,7 +297,10 @@
     <h1>Municipal Service Delivery<br>Reporting Portal <span class="role-tag">Worker</span></h1>
   </div>
   <p class="header-sub" id="welcomeMsg"></p>
-  <button class="btn-logout" id="logoutBtn">Logout</button>
+  <div class="header-buttons">
+    <button class="btn-logout" id="logoutBtn">Logout</button>
+    <button class="btn-profile" onclick="location.href='profilePage.html'">My Profile</button>
+  </div>
 </header>
 
 <main>
@@ -311,13 +333,13 @@
               <th>Submitted By</th>
               <th>Category</th>
               <th>Description</th>
-	      <th>Ward</th>
-	      <th>Municipality</th>
+              <th>Ward</th>
+              <th>Municipality</th>
               <th>Date</th>
               <th>Status</th>
               <th>Proof</th>
               <th>Update Status</th>
-            </tr>
+            <tr>
           </thead>
           <tbody id="requestsTable"></tbody>
         </table>

@@ -61,6 +61,8 @@
       display: flex;
       gap: 10px;
       margin-top: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
 
     header button {
@@ -90,6 +92,16 @@
 
     .btn-delete:hover {
       background: #c82333;
+      transform: translateY(-2px);
+    }
+
+    .btn-profile {
+      background: #17a2b8;
+      color: white;
+    }
+
+    .btn-profile:hover {
+      background: #138496;
       transform: translateY(-2px);
     }
 
@@ -408,6 +420,7 @@
   <p class="header-sub" id="welcomeMsg"></p>
   <div class="header-buttons">
     <button class="btn-logout" id="logoutBtn">Logout</button>
+    <button class="btn-profile" onclick="location.href='profilePage.html'">My Profile</button>
     <button class="btn-delete" onclick="location.href='DeleteAccount.html'">Delete Account</button>
   </div>
 </header>
