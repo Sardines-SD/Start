@@ -21,6 +21,8 @@ const ROLE_REDIRECT = {
 };
 let issueMap    = null;
 let issueMarker = null;
+let activeFeedbackId = null;
+let selectedRating   = 0;
 //popup message for when an image is too large
 
 function showErrorPopup(message) {
@@ -462,45 +464,49 @@ async function loadRequests() {
       table.innerHTML = "<tr class='no-requests'><td colspan='9'>No requests found.";
       return;
     }
+table.innerHTML = data.map(r => {
+  const hasImage = r.image && r.image !== "" && r.image !== null;
+  const imageHtml = hasImage
+    ? `<img src="${escapeHtml(r.image)}" class="proof-image" onclick="event.stopPropagation(); openImageModal('${escapeHtml(r.image)}')" alt="Proof" title="Click to enlarge">`
+    : '<span class="no-image">No image</span>';
 
-    table.innerHTML = data.map(r => {
-      const hasImage = r.image && r.image !== "" && r.image !== null;
-      const imageHtml = hasImage
-        ? `<img src="${escapeHtml(r.image)}" class="proof-image" onclick="event.stopPropagation(); openImageModal('${escapeHtml(r.image)}')" alt="Proof" title="Click to enlarge">`
-        : '<span class="no-image">No image</span>';
-
-      return `
-        <tr>
-          <td>${escapeHtml(r.id)}</td>
-          <td>${escapeHtml(r.category)}</td>
-          <td>${escapeHtml(r.description.substring(0, 80))}${r.description.length > 80 ? "..." : ""}</td>
-          <td>${r.ward || '—'}</td>
-          <td>${r.municipality || '—'}</td>
-
-	<td>${escapeHtml(r.address || '-')}</td>
-
-	<td>
-  	${
-    r.latitude && r.longitude
-      ? `<a href="https://maps.google.com/?q=${r.latitude},${r.longitude}" target="_blank">
-          View Map
-        </a>`
-      : '-'
+  // Build feedback cell
+  const isResolved = r.status === 'resolved';
+  let feedbackCell = '';
+  if (!isResolved) {
+    feedbackCell = '<td>—</td>';
+  } else if (r.feedbackSubmitted) {
+    const stars = '★'.repeat(r.feedbackRating || 0) + '☆'.repeat(5 - (r.feedbackRating || 0));
+    feedbackCell = `<td><span class="feedback-given" title="${escapeHtml(r.feedbackComment || '')}">${stars}</span></td>`;
+  } else {
+    feedbackCell = `<td><button class="btn-rate" onclick="openFeedbackModal('${escapeHtml(r.firestoreId)}')">Rate ⭐</button></td>`;
   }
-	</td>
 
-          <td><span class="badge badge-${getStatusClass(r.status)}">${escapeHtml(r.status)}</span></td>
-          <td>${r.createdAt ? new Date(r.createdAt).toLocaleString() : ""}</td>
-          <td class="proof-cell">${imageHtml}</td>
-          <td>
-            <button class="btn-delete"
-              onclick="deleteReport('${escapeHtml(r.firestoreId)}', this)">
-              Delete
-            </button>
-          </td>
-        </tr>
-      `;
-    }).join("");
+  return `
+    <tr>
+      <td>${escapeHtml(r.id)}</td>
+      <td>${escapeHtml(r.category)}</td>
+      <td>${escapeHtml(r.description.substring(0, 80))}${r.description.length > 80 ? "..." : ""}</td>
+      <td>${r.ward || '—'}</td>
+      <td>${r.municipality || '—'}</td>
+      <td>${escapeHtml(r.address || '-')}</td>
+      <td>
+        ${r.latitude && r.longitude
+          ? `<a href="https://maps.google.com/?q=${r.latitude},${r.longitude}" target="_blank">View Map</a>`
+          : '-'}
+      </td>
+      <td><span class="badge badge-${getStatusClass(r.status)}">${escapeHtml(r.status)}</span></td>
+      ${feedbackCell}
+      <td>${r.createdAt ? new Date(r.createdAt).toLocaleString() : ""}</td>
+      <td class="proof-cell">${imageHtml}</td>
+      <td>
+        <button class="btn-delete" onclick="deleteReport('${escapeHtml(r.firestoreId)}', this)">
+          Delete
+        </button>
+      </td>
+    </tr>
+  `;
+}).join("");
 
   } catch (error) {
     console.error("Load requests error:", error);
@@ -544,6 +550,136 @@ window.deleteReport = async function (firestoreId, btn) {
   }
 };
 
+
+// ── FEEDBACK MODAL ────────────────────────────────────────────────────────────
+window.openFeedbackModal = function(firestoreId) {
+const starLabel = document.getElementById('starLabel');
+if (starLabel) starLabel.textContent = '';
+  activeFeedbackId = firestoreId;
+  selectedRating   = 0;
+  updateStarDisplay(0);
+  document.getElementById('feedbackComment').value   = '';
+  document.getElementById('feedbackError').style.display = 'none';
+  document.getElementById('feedbackFormSection').style.display  = 'block';
+  document.getElementById('feedbackThankyouSection').style.display = 'none';
+  document.getElementById('feedbackModalOverlay').classList.add('open');
+};
+
+window.closeFeedbackModal = function() {
+  document.getElementById('feedbackModalOverlay').classList.remove('open');
+  activeFeedbackId = null;
+  selectedRating   = 0;
+};
+
+window.selectStar = function(value) {
+  selectedRating = value;
+  updateStarDisplay(value);
+ const starLabel = document.getElementById('starLabel');
+  if (starLabel) {
+    starLabel.textContent = STAR_LABELS[value];
+    starLabel.style.color = '#f59e0b';
+  }
+
+  // Trigger bounce on the clicked star and all filled stars
+  const stars = document.querySelectorAll('#starRow span');
+  stars.forEach((star, i) => {
+    if (i < value) {
+      star.classList.remove('star-pop');
+      // Force reflow so the animation re-triggers even on re-click
+      void star.offsetWidth;
+      star.classList.add('star-pop');
+    }
+  });
+};
+
+function updateStarDisplay(value) {
+  const stars = document.querySelectorAll('#starRow span');
+  stars.forEach((star, i) => {
+    star.classList.toggle('active', i < value);
+    star.style.color = i < value ? '#f59e0b' : '#d1d5db';
+  });
+}
+
+// Hover effects for stars
+document.addEventListener('DOMContentLoaded', () => {
+  const starRow = document.getElementById('starRow');
+  if (!starRow) return;
+  starRow.querySelectorAll('span').forEach((star, i, arr) => {
+    star.addEventListener('mouseenter', () => {
+      arr.forEach((s, j) => {
+        s.style.color = j <= i ? '#f59e0b' : '#d1d5db';
+      });
+    });
+    star.addEventListener('mouseleave', () => {
+      updateStarDisplay(selectedRating);
+    });
+  });
+});
+
+window.submitFeedback = async function() {
+  const errEl = document.getElementById('feedbackError');
+  if (!selectedRating) {
+    errEl.textContent = 'Please select a star rating before submitting.';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  const comment = document.getElementById('feedbackComment').value.trim();
+  const submitBtn = document.querySelector('.btn-feedback-submit');
+  submitBtn.disabled    = true;
+  submitBtn.textContent = 'Submitting...';
+
+  try {
+    const token = await getFreshToken();
+    const res   = await fetch(`/api/requests/${activeFeedbackId}/feedback`, {
+      method:  'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ rating: selectedRating, comment }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      errEl.textContent  = err.error ?? 'Failed to submit feedback.';
+      errEl.style.display = 'block';
+      submitBtn.disabled    = false;
+      submitBtn.textContent = 'Submit Feedback';
+      return;
+    }
+
+    // Show thank-you state
+    document.getElementById('feedbackFormSection').style.display    = 'none';
+    document.getElementById('feedbackThankyouSection').style.display = 'block';
+    showToast('✅ Feedback saved — thank you!');
+
+    // Refresh the table row in the background after a short delay
+    setTimeout(() => {
+      loadRequests();
+    }, 1800);
+
+  } catch (err) {
+    errEl.textContent  = 'Network error. Please try again.';
+    errEl.style.display = 'block';
+    submitBtn.disabled    = false;
+    submitBtn.textContent = 'Submit Feedback';
+  }
+};
+
+function showToast(message = '✅ Feedback saved!', duration = 3000) {
+  const toast = document.getElementById('feedbackToast');
+  toast.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), duration);
+}
+
+// Close modal on overlay click
+document.getElementById('feedbackModalOverlay')?.addEventListener('click', function(e) {
+  if (e.target === this) closeFeedbackModal();
+});
+
 function getStatusClass(status) {
   const statusLower = (status || "").toLowerCase();
   if (statusLower === "pending") return "pending";
@@ -551,6 +687,9 @@ function getStatusClass(status) {
   if (statusLower === "resolved" || statusLower === "completed") return "resolved";
   return "pending";
 }
+
+
+
 
 function escapeHtml(str) {
   if (!str) return "";
