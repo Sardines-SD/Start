@@ -153,6 +153,8 @@ output {
   text-decoration: none;
   font-weight: 600;
   transition: 0.3s ease;
+  border: none;
+  cursor: pointer;
 }
 
 .public-dashboard-btn:hover {
