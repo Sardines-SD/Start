@@ -17,6 +17,8 @@ const db = getFirestore(app);
 
 let allRequests = [];
 let currentAdminId = null;
+let workersList = [];
+let selectedRequestId = null;
 
 // Auth guard - always re-check role from Firestore
 onAuthStateChanged(auth, async (user) => {
@@ -44,6 +46,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   document.getElementById("welcomeMsg").textContent = "Admin: " + user.email;
+  await loadWorkers();
   loadAllRequests();
   loadAllUsers();
 });
@@ -74,53 +77,269 @@ if (logoutBtn) {
     logoutClickCount++;
 
     if (logoutClickCount === 1) {
-      // First click — slide right
       logoutBtn.style.transform = "translate(120px,80px)";
     } else if (logoutClickCount === 2) {
-      // Second click — slide back to original
       logoutBtn.style.transform = "translate(0px,0px)";
     } else {
-      // Third click — actually log out
       await logout();
     }
   });
 }
 
-window.switchTab = function (tab) {
-  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+// ── TAB SWITCH FUNCTION ─────────────────────────────────────────────────────
+window.switchTab = function (tab, btn) {
+  const requestsPanel = document.getElementById("tab-requests");
+  const usersPanel = document.getElementById("tab-users");
+  
+  if (requestsPanel) requestsPanel.classList.remove("active");
+  if (usersPanel) usersPanel.classList.remove("active");
+  
+  if (tab === "requests") {
+    if (requestsPanel) requestsPanel.classList.add("active");
+  } else if (tab === "users") {
+    if (usersPanel) usersPanel.classList.add("active");
+  }
+  
   document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-  document.getElementById("tab-" + tab).classList.add("active");
-  if (event && event.target) {
-    event.target.classList.add("active");
+  if (btn) btn.classList.add("active");
+};
+
+// ── LOAD WORKERS ────────────────────────────────────────────────────────────
+async function loadWorkers() {
+  try {
+    const token = await getFreshToken();
+    const res = await fetch("/api/workers", {
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+    });
+    
+    if (res.ok) {
+      workersList = await res.json();
+      console.log("Workers loaded:", workersList.length);
+    } else {
+      console.error("Failed to load workers:", res.status);
+      workersList = [];
+    }
+  } catch (error) {
+    console.error("Error loading workers:", error);
+    workersList = [];
+  }
+}
+
+// ── RENDER REQUEST LIST (LEFT PANEL) ────────────────────────────────────────
+function renderRequestList() {
+  const container = document.getElementById("requestList");
+  const searchTerm = document.getElementById("searchInput")?.value.toLowerCase() || "";
+  const statusFilter = document.getElementById("filterStatus")?.value || "";
+  const categoryFilter = document.getElementById("filterCategory")?.value || "";
+
+  let filtered = allRequests.filter(r => {
+    const matchesSearch = !searchTerm || 
+      (r.userEmail || "").toLowerCase().includes(searchTerm) ||
+      (r.category || "").toLowerCase().includes(searchTerm) ||
+      (r.description || "").toLowerCase().includes(searchTerm);
+    const matchesStatus = !statusFilter || r.status === statusFilter;
+    const matchesCategory = !categoryFilter || r.category === categoryFilter;
+    return matchesSearch && matchesStatus && matchesCategory;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty-state">No requests found.</div>';
+    return;
+  }
+
+  container.innerHTML = filtered.map(req => {
+    const priorityClass = req.priority === 'high' ? 'priority-high' : (req.priority === 'medium' ? 'priority-medium' : 'priority-low');
+    const priorityText = req.priority ? req.priority.toUpperCase() : 'Not set';
+    const statusClass = req.status === 'pending' ? 'badge-pending' : (req.status === 'in-progress' ? 'badge-inprogress' : 'badge-resolved');
+    
+    return `
+      <div class="request-item ${selectedRequestId === req.firestoreId ? 'selected' : ''}" data-id="${req.firestoreId}">
+        <div class="request-title">
+          <span class="request-id">#${escapeHtml(req.id)}</span>
+          <span class="badge ${priorityClass}">${priorityText}</span>
+        </div>
+        <div class="request-category"><strong>${escapeHtml(req.category)}</strong></div>
+        <div class="request-desc">${escapeHtml(req.description.substring(0, 80))}${req.description.length > 80 ? '...' : ''}</div>
+        <div class="request-meta">
+          <span>👤 ${escapeHtml(req.userEmail?.split('@')[0] || '-')}</span>
+          <span class="badge ${statusClass}">${escapeHtml(req.status)}</span>
+          <span>📅 ${escapeHtml(req.createdAt || '-')}</span>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  document.querySelectorAll(".request-item").forEach(el => {
+    el.addEventListener("click", () => {
+      const id = el.dataset.id;
+      selectRequest(id);
+    });
+  });
+}
+
+// ── SELECT AND DISPLAY REQUEST DETAILS (RIGHT PANEL) ────────────────────────
+async function selectRequest(firestoreId) {
+  selectedRequestId = firestoreId;
+  renderRequestList();
+
+  const request = allRequests.find(r => r.firestoreId === firestoreId);
+  if (!request) return;
+
+  const hasImage = request.image && request.image !== "" && request.image !== null;
+  const imageHtml = hasImage 
+    ? `<img src="${escapeHtml(request.image)}" class="proof-image" onclick="event.stopPropagation(); openImageModal('${escapeHtml(request.image)}')" alt="Proof image" title="Click to enlarge">`
+    : '<span class="no-image">No image uploaded</span>';
+
+  const feedbackHtml = request.status === 'resolved' && request.feedbackSubmitted
+    ? `<span class="feedback-stars">${'★'.repeat(request.feedbackRating || 0)}${'☆'.repeat(5 - (request.feedbackRating || 0))}</span> ${request.feedbackComment ? `<br><small>${escapeHtml(request.feedbackComment)}</small>` : ''}`
+    : request.status === 'resolved' ? '<span class="no-image">Awaiting feedback</span>' : '<span class="no-image">Not resolved yet</span>';
+
+  const workerOptions = workersList.map(w => 
+    `<option value="${w.uid}" ${request.assignedTo === w.uid ? 'selected' : ''}>${escapeHtml(w.username || w.email)}</option>`
+  ).join('');
+
+  // Priority dropdown with "— Select Priority —" as default
+  const priorityOptions = `
+    <option value="" ${!request.priority ? 'selected' : ''}> Select Priority </option>
+    <option value="low" ${request.priority === 'low' ? 'selected' : ''}>🟢 Low</option>
+    <option value="medium" ${request.priority === 'medium' ? 'selected' : ''}>🟡 Medium</option>
+    <option value="high" ${request.priority === 'high' ? 'selected' : ''}>🔴 High</option>
+  `;
+
+  const detailCard = document.getElementById("detailCard");
+  detailCard.innerHTML = `
+    <h2>Request #${escapeHtml(request.id)} Details</h2>
+    
+    <div class="info-row">
+      <div class="label">User:</div>
+      <div class="info-value">${escapeHtml(request.userEmail || '-')}</div>
+    </div>
+    
+    <div class="info-row">
+      <div class="label">Category:</div>
+      <div class="info-value">${escapeHtml(request.category)}</div>
+    </div>
+    
+    <div class="info-row">
+      <div class="label">Description:</div>
+      <div class="info-value">${escapeHtml(request.description)}</div>
+    </div>
+    
+    <div class="info-row">
+      <div class="label">Ward / Municipality:</div>
+      <div class="info-value">${request.ward || 'Unknown'} / ${request.municipality || 'Unknown'}</div>
+    </div>
+    
+    <div class="info-row">
+      <div class="label">Address:</div>
+      <div class="info-value">${escapeHtml(request.address || 'Not available')}</div>
+    </div>
+    
+    <div class="info-row">
+      <div class="label">Location:</div>
+      <div class="info-value">${request.latitude && request.longitude ? `<a href="https://maps.google.com/?q=${request.latitude},${request.longitude}" target="_blank">📍 View on Google Maps</a>` : 'Not available'}</div>
+    </div>
+    
+    <div class="info-row">
+      <div class="label">Proof Image:</div>
+      <div class="info-value">${imageHtml}</div>
+    </div>
+    
+    <div class="info-row">
+      <div class="label">Citizen Feedback:</div>
+      <div class="info-value">${feedbackHtml}</div>
+    </div>
+    
+    <div class="controls">
+      <select id="statusSelect-${firestoreId}">
+        <option value="pending" ${request.status === "pending" ? "selected" : ""}>Pending</option>
+        <option value="in-progress" ${request.status === "in-progress" ? "selected" : ""}>In Progress</option>
+        <option value="resolved" ${request.status === "resolved" ? "selected" : ""}>Resolved</option>
+      </select>
+      
+      <select id="prioritySelect-${firestoreId}">
+        ${priorityOptions}
+      </select>
+      
+      <select id="workerSelect-${firestoreId}">
+        <option value="">Assign to Worker...</option>
+        ${workerOptions}
+      </select>
+      
+      <button onclick="saveRequestChanges('${firestoreId}')">Save Changes</button>
+    </div>
+  `;
+}
+
+// ── SAVE REQUEST CHANGES ─────────────────────────────────────────────────────
+window.saveRequestChanges = async function(firestoreId) {
+  const statusSelect = document.getElementById(`statusSelect-${firestoreId}`);
+  const prioritySelect = document.getElementById(`prioritySelect-${firestoreId}`);
+  const workerSelect = document.getElementById(`workerSelect-${firestoreId}`);
+  
+  const newStatus = statusSelect ? statusSelect.value : null;
+  const newPriority = prioritySelect ? prioritySelect.value : null;
+  const workerUid = workerSelect ? workerSelect.value : null;
+  
+  try {
+    const token = await getFreshToken();
+    
+    if (newPriority && newPriority !== "") {
+      const priorityRes = await fetch(`/api/requests/${firestoreId}/priority`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ priority: newPriority }),
+      });
+      if (!priorityRes.ok) throw new Error("Priority update failed");
+    }
+    
+    if (newStatus) {
+      const statusRes = await fetch(`/api/requests/${firestoreId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!statusRes.ok) throw new Error("Status update failed");
+    }
+    
+    if (workerUid) {
+      const assignPriority = newPriority && newPriority !== "" ? newPriority : "medium";
+      const assignRes = await fetch(`/api/requests/${firestoreId}/assign`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ workerUid: workerUid, priority: assignPriority }),
+      });
+      if (!assignRes.ok) {
+        const err = await assignRes.json();
+        throw new Error(err.error || "Assignment failed");
+      }
+      alert("Request assigned successfully! Worker has been notified by email.");
+    } else {
+      alert("Changes saved successfully!");
+    }
+    
+    await loadAllRequests();
+    await loadAllUsers();
+    selectRequest(firestoreId);
+  } catch (error) {
+    console.error("Save error:", error);
+    alert("Failed to save changes: " + error.message);
   }
 };
 
-window.openImageModal = function (imageSrc) {
-  const modal = document.getElementById("imageModal");
-  const modalImg = document.getElementById("modalImage");
-  if (modal && modalImg && imageSrc) {
-    modalImg.src = imageSrc;
-    modal.style.display = "block";
-  }
-};
+// ── UPDATE STATS CARDS ──────────────────────────────────────────────────────
+function updateStats(data) {
+  document.getElementById("totalCount").textContent = data.length;
+  document.getElementById("pendingCount").textContent = data.filter(r => r.status === "pending").length;
+  document.getElementById("inprogressCount").textContent = data.filter(r => r.status === "in-progress").length;
+  document.getElementById("resolvedCount").textContent = data.filter(r => r.status === "resolved").length;
+}
 
-window.closeImageModal = function () {
-  const modal = document.getElementById("imageModal");
-  if (modal) {
-    modal.style.display = "none";
-  }
-};
-
-document.addEventListener("keydown", function (e) {
-  if (e.key === "Escape") {
-    closeImageModal();
-  }
-});
-
+// ── LOAD ALL REQUESTS ───────────────────────────────────────────────────────
 async function loadAllRequests() {
-  const table = document.getElementById("requestsTable");
-  table.innerHTML = "<tr><td colspan='10'>Loading...";
-
   try {
     const token = await getFreshToken();
     const res = await fetch("/api/requests", {
@@ -134,150 +353,28 @@ async function loadAllRequests() {
 
     allRequests = await res.json();
     updateStats(allRequests);
-    filterRequests();
-  } catch {
-    table.innerHTML = "<tr><td colspan='10'>Failed to load requests.";
+    renderRequestList();
+  } catch (error) {
+    console.error("Error loading requests:", error);
+    document.getElementById("requestList").innerHTML = '<div class="empty-state">Failed to load requests.</div>';
   }
 }
 
-function renderRequestsTable(data) {
-  const table = document.getElementById("requestsTable");
+// ── FILTER EVENT LISTENERS ──────────────────────────────────────────────────
+const searchInput = document.getElementById("searchInput");
+const filterStatus = document.getElementById("filterStatus");
+const filterCategory = document.getElementById("filterCategory");
 
-  if (!data.length) {
-    table.innerHTML = "<td><td colspan='10'>No requests found.";
-    return;
-  }
+if (searchInput) searchInput.addEventListener("input", () => renderRequestList());
+if (filterStatus) filterStatus.addEventListener("change", () => renderRequestList());
+if (filterCategory) filterCategory.addEventListener("change", () => renderRequestList());
 
-  table.innerHTML = data.map(req => {
-    const hasImage = req.image && req.image !== "" && req.image !== null;
-    const imageHtml = hasImage
-      ? `<img src="${escapeHtml(req.image)}" class="proof-image" onclick="event.stopPropagation(); openImageModal('${escapeHtml(req.image)}')" alt="Proof image" title="Click to enlarge">`
-      : '<span class="no-image">No image</span>';
-
-    const statusClass = req.status === "in-progress" ? "inprogress" : req.status;
-
-
-// Admin feedback display cell
-let adminFeedbackCell = '<td>—</td>';
-if (req.status === 'resolved' && req.feedbackSubmitted) {
-  const filled = '★'.repeat(req.feedbackRating || 0);
-  const empty  = '☆'.repeat(5 - (req.feedbackRating || 0));
-  const tip    = req.feedbackComment ? escapeHtml(req.feedbackComment) : 'No comment';
-  adminFeedbackCell = `
-    <td>
-      <span class="feedback-given star-gold" title="${tip}">${filled}</span><span class="feedback-given">${empty}</span>
-      <br><small style="color:#9ca3af">${req.feedbackComment ? escapeHtml(req.feedbackComment.substring(0,40)) + (req.feedbackComment.length > 40 ? '…' : '') : ''}</small>
-    </td>`;
-} else if (req.status === 'resolved') {
-  adminFeedbackCell = `<td><small style="color:#9ca3af">Awaiting</small></td>`;
-}	
-    return `
-      <tr>
-        <td>${escapeHtml(req.id)}</td>
-        <td>${escapeHtml(req.userEmail ?? "-")}</td>
-        <td>${escapeHtml(req.category)}</td>
-        <td>${escapeHtml(req.description)}</td>
-        <td>${req.ward || 'Unknown'}</td>
-        <td>${req.municipality || 'Unknown'}</td>
-	<td>${escapeHtml(req.address || '-')}</td>
-	<td>
-  		${
-    req.latitude && req.longitude
-      ? `<a href="https://maps.google.com/?q=${req.latitude},${req.longitude}" target="_blank">
-          View Map
-        </a>`
-      : '-'
-  }
-	</td>
-        <td>${escapeHtml(req.createdAt ?? "-")}</td>
-       <td><span class="badge badge-${statusClass}">${escapeHtml(req.status)}</span></td>
-        ${adminFeedbackCell}
-        <td class="proof-cell">${imageHtml}</td>
-        <td>
-          ${req.status === "resolved"
-            ? `<span style="font-size:0.8rem;color:#155724;background:#d4edda;padding:4px 10px;border-radius:6px;font-weight:600;">Resolved</span>`
-            : `<select class="status-select" data-id="${escapeHtml(req.firestoreId)}" onchange="updateStatus(this)">
-                <option value="">Change...</option>
-                <option value="pending" ${req.status === "pending" ? "selected" : ""}>Pending</option>
-                <option value="in-progress" ${req.status === "in-progress" ? "selected" : ""}>In Progress</option>
-                <option value="resolved">Resolved</option>
-               </select>`
-          }
-        </td>
-      </tr>
-    `;
-  }).join("");
-}
-
-function updateStats(data) {
-  document.getElementById("totalCount").textContent = data.length;
-  document.getElementById("pendingCount").textContent = data.filter(r => r.status === "pending").length;
-  document.getElementById("inprogressCount").textContent = data.filter(r => r.status === "in-progress").length;
-  document.getElementById("resolvedCount").textContent = data.filter(r => r.status === "resolved").length;
-
-  const rated = data.filter(r => r.feedbackSubmitted && r.feedbackRating);
-  const avgEl = document.getElementById("avgRatingDisplay");
-  if (avgEl) {
-    avgEl.textContent = rated.length
-      ? (rated.reduce((sum, r) => sum + r.feedbackRating, 0) / rated.length).toFixed(1) + " / 5"
-      : "No ratings yet";
-  }
-}
-
-window.filterRequests = function () {
-  const s = document.getElementById("filterStatus").value;
-  const c = document.getElementById("filterCategory").value;
-  const q = document.getElementById("searchInput")?.value.trim().toLowerCase() || "";
-
-  const filtered = allRequests.filter(r => {
-    const matchesStatus = !s || r.status === s;
-    const matchesCategory = !c || r.category === c;
-
-    const matchesSearch =
-      !q ||
-      (r.userEmail || "").toLowerCase().includes(q) ||
-      (r.category || "").toLowerCase().includes(q) ||
-      (r.description || "").toLowerCase().includes(q) ||
-      (r.status || "").toLowerCase().includes(q);
-
-    return matchesStatus && matchesCategory && matchesSearch;
-  });
-
-  renderRequestsTable(filtered);
-};
-
-window.updateStatus = async function (selectEl) {
-  const firestoreId = selectEl.dataset.id;
-  const newStatus = selectEl.value;
-  if (!newStatus) return;
-
-  try {
-    const token = await getFreshToken();
-    const res = await fetch(`/api/requests/${firestoreId}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-      body: JSON.stringify({ status: newStatus }),
-    });
-
-    if (!res.ok) throw new Error();
-
-    allRequests = allRequests.map(r =>
-      r.firestoreId === firestoreId ? { ...r, status: newStatus } : r
-    );
-
-    updateStats(allRequests);
-    filterRequests();
-  } catch {
-    alert("Failed to update status.");
-  }
-};
-
+// ── LOAD ALL USERS (MANAGE USERS TAB) ───────────────────────────────────────
 async function loadAllUsers() {
   const table = document.getElementById("usersTable");
-  table.innerHTML = "<tr><td colspan='7'>Loading...";
+  if (!table) return;
+  
+  table.innerHTML = "<td><td colspan='7'>Loading...";
 
   try {
     const token = await getFreshToken();
@@ -304,8 +401,6 @@ async function loadAllUsers() {
         <td>${escapeHtml(u.email)}</td>
         <td>${u.ward || '-'}</td>
         <td>${u.municipality || '-'}</td>
-	
-
         <td><span class="badge badge-${escapeHtml(u.role)}">${escapeHtml(u.role)}</span></td>
         <td>
           <select class="role-select" data-uid="${escapeHtml(u.uid)}" onchange="updateRole(this)">
@@ -324,9 +419,11 @@ async function loadAllUsers() {
     `).join("");
   } catch {
     table.innerHTML = "<tr><td colspan='7'>Failed to load users.";
+    document.getElementById("userCount").textContent = "Error";
   }
 }
 
+// ── UPDATE USER ROLE ────────────────────────────────────────────────────────
 window.updateRole = async function (selectEl) {
   const uid = selectEl.dataset.uid;
   const newRole = selectEl.value;
@@ -352,11 +449,13 @@ window.updateRole = async function (selectEl) {
 
     alert("Role updated. The user will see the change on their next login.");
     loadAllUsers();
+    loadWorkers();
   } catch {
     alert("Failed to update role.");
   }
 };
 
+// ── DELETE USER DIRECT ──────────────────────────────────────────────────────
 window.deleteUserDirect = async function (uid, email) {
   if (uid === currentAdminId) {
     alert("You cannot delete your own account.");
@@ -391,14 +490,39 @@ window.deleteUserDirect = async function (uid, email) {
     alert(`User "${email}" has been permanently deleted.`);
     loadAllUsers();
     loadAllRequests();
+    loadWorkers();
   } catch (error) {
     console.error("Delete error:", error);
     alert("Failed to delete user: " + error.message);
   }
 };
 
+// ── IMAGE MODAL FUNCTIONS ───────────────────────────────────────────────────
+window.openImageModal = function (imageSrc) {
+  const modal = document.getElementById("imageModal");
+  const modalImg = document.getElementById("modalImage");
+  if (modal && modalImg && imageSrc) {
+    modalImg.src = imageSrc;
+    modal.style.display = "block";
+  }
+};
+
+window.closeImageModal = function () {
+  const modal = document.getElementById("imageModal");
+  if (modal) {
+    modal.style.display = "none";
+  }
+};
+
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Escape") {
+    closeImageModal();
+  }
+});
+
+// ── ESCAPE HTML (FIXED: HANDLES 0 CORRECTLY) ────────────────────────────────
 function escapeHtml(str) {
-  if (!str) return "";
+  if (str === null || str === undefined) return "";
   return String(str)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")

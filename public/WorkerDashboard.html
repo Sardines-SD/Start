@@ -156,6 +156,37 @@
     .badge-inprogress  { background: #cce5ff; color: #004085; }
     .badge-resolved    { background: #d4edda; color: #155724; }
 
+    /* Priority Badge Styles */
+    .priority-low {
+      background: #d4edda;
+      color: #155724;
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .priority-medium {
+      background: #fff3cd;
+      color: #856404;
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .priority-high {
+      background: #f8d7da;
+      color: #721c24;
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
     /* Filter bar */
     .filter-bar {
       display: flex;
@@ -333,13 +364,15 @@
               <th>Submitted By</th>
               <th>Category</th>
               <th>Description</th>
+              <th>Priority</th>
+              <th>Assigned By</th>
               <th>Ward</th>
               <th>Municipality</th>
               <th>Date</th>
               <th>Status</th>
               <th>Proof</th>
               <th>Update Status</th>
-            <tr>
+            </tr>
           </thead>
           <tbody id="requestsTable"></tbody>
         </table>
