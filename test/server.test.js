@@ -1369,3 +1369,168 @@ describe('App.js — Sprint 3 Feature Logic', () => {
   });
 
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// COVERAGE GAP TESTS — Target remaining uncovered lines
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('Coverage — app.js branch gaps', () => {
+
+  // app.js line 125: buildStatusEmailSubject fallback label (unknown status)
+  test('buildStatusEmailSubject uses fallback label for unknown status', () => {
+    const subject = buildStatusEmailSubject('cancelled', 'Water');
+    expect(subject).toContain('Water');
+    expect(subject).toContain('has been updated');
+  });
+
+  // app.js line 170: sanitisePublicReport falls back to report.id when no firestoreId
+  test('sanitisePublicReport falls back to report.id when firestoreId is missing', () => {
+    const result = sanitisePublicReport({
+      id: 'fallback-id', category: 'Waste', status: 'pending', description: 'test',
+    });
+    expect(result.firestoreId).toBe('fallback-id');
+  });
+
+  // app.js line 190: calculateAnalytics — byStatus skips unknown statuses
+  test('calculateAnalytics ignores unrecognised status values', () => {
+    const result = calculateAnalytics([
+      { category: 'Water', status: 'draft', assignedTo: null },
+    ]);
+    expect(result.byStatus['pending']).toBe(0);
+    expect(result.byStatus['resolved']).toBe(0);
+    expect(result.totalRequests).toBe(1);
+  });
+
+  // app.js line 257: buildCSVRow with all fields populated (userEmail + createdAt)
+  test('buildCSVRow includes userEmail and createdAt when present', () => {
+    const row = buildCSVRow({
+      id: '99', category: 'Electricity', description: 'Power out',
+      status: 'resolved', priority: 'high', ward: 'Ward 3',
+      municipality: 'Tshwane', userEmail: 'worker@test.com', createdAt: '09/05/2026',
+    });
+    expect(row).toContain('worker@test.com');
+    expect(row).toContain('09/05/2026');
+    expect(row).toContain('Electricity');
+  });
+
+  // app.js branches: applyRequestFilters matching by category keyword
+  test('applyRequestFilters matches keyword against category field', () => {
+    const reports = [
+      { category: 'Electricity', description: 'no power', status: 'pending' },
+      { category: 'Pothole',     description: 'big crack', status: 'pending' },
+    ];
+    const result = applyRequestFilters(reports, '', 'electricity');
+    expect(result.length).toBe(1);
+    expect(result[0].category).toBe('Electricity');
+  });
+
+  // app.js branches: applyRequestFilters combining status AND keyword
+  test('applyRequestFilters can filter by both status and keyword simultaneously', () => {
+    const reports = [
+      { category: 'Water', description: 'burst pipe', status: 'pending'  },
+      { category: 'Water', description: 'burst pipe', status: 'resolved' },
+      { category: 'Waste', description: 'bin full',   status: 'pending'  },
+    ];
+    const result = applyRequestFilters(reports, 'pending', 'pipe');
+    expect(result.length).toBe(1);
+    expect(result[0].status).toBe('pending');
+  });
+
+});
+
+describe('Coverage — helpers.js branch gaps', () => {
+
+  // helpers.js lines 26-34: getLoginErrorMessage — all individual branches
+  test('getLoginErrorMessage covers auth/invalid-credential branch', () => {
+    expect(getLoginErrorMessage('auth/invalid-credential')).toBe('Invalid email or password.');
+  });
+
+  // helpers.js line 296: canClaimRequest — worker branch specifically
+  test('canClaimRequest returns true for worker role explicitly', () => {
+    expect(canClaimRequest('worker')).toBe(true);
+  });
+
+  // helpers.js: isValidEmail — missing domain (covers @nodomain edge)
+  test('isValidEmail rejects address with no TLD', () => {
+    expect(isValidEmail('user@nodomain')).toBe(false);
+  });
+
+  // helpers.js: escapeHtml — apostrophe branch
+  test('escapeHtml converts single quotes', () => {
+    expect(escapeHtml("it's")).toBe('it&#39;s');
+  });
+
+  // helpers.js: getStatusClass — 'completed' branch
+  test('getStatusClass maps completed to resolved', () => {
+    expect(getStatusClass('completed')).toBe('resolved');
+  });
+
+  // helpers.js: getStatusClass — 'in progress' (with space) branch
+  test('getStatusClass maps "in progress" (with space) to progress', () => {
+    expect(getStatusClass('in progress')).toBe('progress');
+  });
+
+  // helpers.js: generateFullCSV empty array returns only header
+  test('generateFullCSV empty returns just the header line', () => {
+    expect(generateFullCSV([])).toBe('ID,Category,Description,Status,Priority,Ward,Municipality');
+  });
+
+  // helpers.js: filterByCategory — category match
+  test('filterByCategory filters correctly by matching category', () => {
+    const reports = [
+      { category: 'Water', status: 'pending' },
+      { category: 'Waste', status: 'pending' },
+    ];
+    expect(filterByCategory(reports, 'Waste').length).toBe(1);
+    expect(filterByCategory(reports, 'Waste')[0].category).toBe('Waste');
+  });
+
+  // helpers.js: buildReportWithLocation with invalid coords sets hasLocation false
+  test('buildReportWithLocation sets hasLocation false for invalid coordinates', () => {
+    const result = buildReportWithLocation(
+      { category: 'Pothole' }, 'bad', 'bad', null, null
+    );
+    expect(result.hasLocation).toBe(false);
+  });
+
+});
+
+describe('Coverage — final branch closure', () => {
+
+  // app.js 108-109: category-only match (description does NOT match, category DOES)
+  // This forces the right side of the || to be evaluated and return true
+  test('applyRequestFilters matches keyword only in category, not description', () => {
+    const reports = [
+      { category: 'Electricity', description: 'nothing relevant', status: 'pending' },
+      { category: 'Pothole',     description: 'nothing relevant', status: 'pending' },
+    ];
+    const result = applyRequestFilters(reports, '', 'pothole');
+    expect(result.length).toBe(1);
+    expect(result[0].category).toBe('Pothole');
+  });
+
+  // app.js 170: sanitisePublicReport — both ward and municipality present
+  test('sanitisePublicReport includes ward and municipality when present', () => {
+    const result = sanitisePublicReport({
+      firestoreId: 'abc', category: 'Waste', status: 'resolved',
+      description: 'bin overflowing', ward: 'Ward 7', municipality: 'Ekurhuleni',
+      latitude: -26.1, longitude: 28.1, createdAt: '01/05/2026',
+    });
+    expect(result.ward).toBe('Ward 7');
+    expect(result.municipality).toBe('Ekurhuleni');
+    expect(result.latitude).toBe(-26.1);
+    expect(result.createdAt).toBe('01/05/2026');
+  });
+
+  // app.js 257: buildCSVRow — both userEmail and createdAt missing (falsy branch)
+  test('buildCSVRow handles missing userEmail and createdAt gracefully', () => {
+    const row = buildCSVRow({
+      id: '5', category: 'Pothole', description: 'crack',
+      status: 'pending', priority: 'low', ward: 'Ward 1', municipality: 'CoJ',
+      // no userEmail, no createdAt
+    });
+    expect(typeof row).toBe('string');
+    expect(row.split(',').length).toBe(9); // 9 columns always
+  });
+
+});
