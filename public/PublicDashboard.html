@@ -1,4 +1,22 @@
-<section class="public-dashboard-section">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Public Dashboard</title>
+
+  <link rel="stylesheet" href="styler.css">
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet/dist/leaflet.css"
+  />
+</head>
+
+<body>
+  
+  <section class="public-dashboard-section">
 
   <h2>Public Service Delivery Dashboard</h2>
   <p class="section-subtitle">
@@ -56,121 +74,11 @@
 
 </section>
 
-<!-- Leaflet CSS -->
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet/dist/leaflet.css"
-/>
-
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-<style>
-
-.public-dashboard-section {
-  background: rgba(225, 235, 250, 0.93);
-  border-radius: 12px;
-  padding: 32px;
-  max-width: 1400px;
-  margin: 30px auto;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-}
-
-.public-dashboard-section h2 {
-  margin-top: 0;
-  color: #1a2a3a;
-}
-
-.section-subtitle {
-  color: #4a6a8a;
-  margin-bottom: 25px;
-}
-
-/* Stats cards */
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.stat-card {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  text-align: center;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
-}
-
-.stat-card h3 {
-  margin: 0;
-  font-size: 34px;
-  color: #2b5fa8;
-}
-
-.stat-card p {
-  margin-top: 10px;
-  font-weight: 600;
-  color: #4a6a8a;
-}
-
-/* Map */
-
-#publicMap {
-  width: 100%;
-  height: 500px;
-  border-radius: 12px;
-  overflow: hidden;
-  margin-top: 20px;
-}
-
-/* Table */
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th {
-  background: #2b5fa8;
-  color: white;
-  padding: 12px;
-}
-
-td {
-  padding: 12px;
-  border-bottom: 1px solid #d0dcea;
-  color: #2a3a4a;
-}
-
-tr:hover td {
-  background: #dde8f8;
-}
-
-.badge {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.badge-pending {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.badge-in-progress {
-  background: #cce5ff;
-  color: #004085;
-}
-
-.badge-resolved {
-  background: #d4edda;
-  color: #155724;
-}
-
-</style>
 
 <script type="module" src="publicDashboard.js"></script>
+
+</body>
+</html>
