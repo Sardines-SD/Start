@@ -15,7 +15,7 @@
     "collectCoverage": true,
     "collectCoverageFrom": [
       "app.js",
-      "helpers.js"
+      "test/helpers.js"
     ],
     "coverageReporters": [
       "lcov",
