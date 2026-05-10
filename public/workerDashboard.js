@@ -120,7 +120,7 @@ async function loadAllRequests() {
 function renderTable(data) {
   const table = document.getElementById("requestsTable");
   if (!data.length) { 
-    table.innerHTML = "<tr><td colspan='12'>No requests assigned to you."; 
+    table.innerHTML = "<tr><td colspan='12'>No requests have been assigned to you yet."; 
     return; 
   }
   
@@ -150,7 +150,6 @@ function renderTable(data) {
         <td class="update-cell">
           <select class="status-select" data-id="${escapeHtml(req.firestoreId)}" onchange="updateStatus(this)">
             <option value="">Change...</option>
-            <option value="pending"     ${req.status === "pending"     ? "selected" : ""}>Pending</option>
             <option value="in-progress" ${req.status === "in-progress" ? "selected" : ""}>In Progress</option>
             <option value="resolved"    ${req.status === "resolved"    ? "selected" : ""}>Resolved</option>
           </select>

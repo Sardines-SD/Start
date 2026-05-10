@@ -316,7 +316,8 @@ app.patch("/api/requests/:id/assign", requireAuth, async (req, res) => {
       assignedToEmail: workerEmail,
       assignedToName: workerName,
       assignedAt: admin.firestore.FieldValue.serverTimestamp(),
-      priority: priority || "medium"
+      priority: priority || "medium",
+      status: "in-progress"
     };
     
     await requestRef.update(updateData);
