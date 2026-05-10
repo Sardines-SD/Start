@@ -99,7 +99,6 @@ function getPriorityBadge(priority) {
 
 async function loadAllRequests() {
   const table = document.getElementById("requestsTable");
-  // Updated colspan from 10 to 12 (table now has 12 columns)
   table.innerHTML = "<tr><td colspan='12'>Loading...";
 
   try {
@@ -109,7 +108,7 @@ async function loadAllRequests() {
     });
     if (!res.ok) throw new Error();
     const allData = await res.json();
-    // Filter to show only requests assigned to this worker
+    // Only requests assigned to this worker
     allRequests = allData.filter(req => req.assignedTo === currentWorkerUid);
     renderTable(allRequests);
   } catch {
@@ -118,51 +117,114 @@ async function loadAllRequests() {
 }
 
 function renderTable(data) {
-  const table = document.getElementById("requestsTable");
-  if (!data.length) { 
-    table.innerHTML = "<tr><td colspan='12'>No requests have been assigned to you yet."; 
-    return; 
-  }
-  
-  table.innerHTML = data.map(req => {
-    const hasImage = req.image && req.image !== "" && req.image !== null;
-    const imageHtml = hasImage 
-      ? `<img src="${escapeHtml(req.image)}" class="proof-image" onclick="event.stopPropagation(); openImageModal('${escapeHtml(req.image)}')" alt="Proof image" title="Click to enlarge">`
-      : '<span class="no-image">No image</span>';
-    
-    let statusClass = req.status === "in-progress" ? "inprogress" : req.status;
-    const priorityBadge = getPriorityBadge(req.priority);
-    const assignedByName = req.assignedToName || 'Unknown';
-    
-    return `
-      <table>
-        <td class="id-cell">${escapeHtml(req.id)}</td>
-        <td class="user-cell">${escapeHtml(req.userEmail ?? "-")}</td>
-        <td class="category-cell">${escapeHtml(req.category)}</td>
-        <td class="description-cell">${escapeHtml(req.description)}</td>
-        <td class="priority-cell">${priorityBadge}</td>
-        <td class="assigned-by-cell">${escapeHtml(assignedByName)}</td>
-        <td class="ward-cell">${req.ward || '-'}</td>
-        <td class="municipality-cell">${req.municipality || '-'}</td>
-        <td class="date-cell">${escapeHtml(req.createdAt ?? "-")}</td>
-        <td class="status-cell"><span class="badge badge-${statusClass}">${escapeHtml(req.status)}</span></td>
-        <td class="proof-cell">${imageHtml}</td>
-        <td class="update-cell">
-          <select class="status-select" data-id="${escapeHtml(req.firestoreId)}" onchange="updateStatus(this)">
-            <option value="">Change...</option>
-            <option value="in-progress" ${req.status === "in-progress" ? "selected" : ""}>In Progress</option>
-            <option value="resolved"    ${req.status === "resolved"    ? "selected" : ""}>Resolved</option>
-          </select>
-        </td>
-      </tr>
-    `;
-  }).join("");
+  // Split into: assigned-but-not-yet-claimed vs claimed/active
+  const pending = data.filter(r => !r.claimedAt);
+  const active  = data.filter(r =>  r.claimedAt);
+
+  renderPendingTable(pending);
+  renderActiveTable(active);
 }
+
+function buildRow(req, showClaimBtn) {
+  const hasImage = req.image && req.image !== "" && req.image !== null;
+  const imageHtml = hasImage
+    ? `<img src="${escapeHtml(req.image)}" class="proof-image" onclick="event.stopPropagation(); openImageModal('${escapeHtml(req.image)}')" alt="Proof image" title="Click to enlarge">`
+    : '<span class="no-image">No image</span>';
+
+  const statusClass    = req.status === "in-progress" ? "inprogress" : req.status;
+  const priorityBadge  = getPriorityBadge(req.priority);
+  const assignedByName = req.assignedToName || 'Admin';
+
+  const actionCell = showClaimBtn
+    ? `<td class="update-cell">
+        <button class="btn-claim" data-id="${escapeHtml(req.firestoreId)}" onclick="claimRequest(this)">
+          Accept
+        </button>
+       </td>`
+    : `<td class="update-cell">
+        <select class="status-select" data-id="${escapeHtml(req.firestoreId)}" onchange="updateStatus(this)">
+          <option value="">Change...</option>
+          <option value="in-progress" ${req.status === "in-progress" ? "selected" : ""}>In Progress</option>
+          <option value="resolved"    ${req.status === "resolved"    ? "selected" : ""}>Resolved</option>
+        </select>
+       </td>`;
+
+  return `
+    <tr>
+      <td class="id-cell">${escapeHtml(req.id)}</td>
+      <td class="user-cell">${escapeHtml(req.userEmail ?? "-")}</td>
+      <td class="category-cell">${escapeHtml(req.category)}</td>
+      <td class="description-cell">${escapeHtml(req.description)}</td>
+      <td class="priority-cell">${priorityBadge}</td>
+      <td class="assigned-by-cell">${escapeHtml(assignedByName)}</td>
+      <td class="ward-cell">${req.ward || '-'}</td>
+      <td class="municipality-cell">${req.municipality || '-'}</td>
+      <td class="date-cell">${escapeHtml(req.createdAt ?? "-")}</td>
+      <td class="status-cell"><span class="badge badge-${statusClass}">${escapeHtml(req.status)}</span></td>
+      <td class="proof-cell">${imageHtml}</td>
+      ${actionCell}
+    </tr>
+  `;
+}
+
+function renderPendingTable(data) {
+  const section = document.getElementById("pendingAcceptanceSection");
+  const table   = document.getElementById("pendingAcceptanceTable");
+  if (!section || !table) return;
+
+  if (!data.length) {
+    section.style.display = "none";
+    return;
+  }
+  section.style.display = "block";
+  table.innerHTML = data.map(r => buildRow(r, true)).join("");
+}
+
+function renderActiveTable(data) {
+  const table = document.getElementById("requestsTable");
+  if (!data.length) {
+    table.innerHTML = "<tr><td colspan='12'>No active requests yet.";
+    return;
+  }
+  table.innerHTML = data.map(r => buildRow(r, false)).join("");
+}
+
+window.claimRequest = async function (btn) {
+  const firestoreId = btn.dataset.id;
+  if (!confirm("Accept this request? It will be marked as In Progress.")) return;
+
+  btn.disabled    = true;
+  btn.textContent = "Accepting...";
+
+  try {
+    const token = await getFreshToken();
+    const res   = await fetch(`/api/requests/${firestoreId}/claim`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Failed");
+    }
+
+    // Update local state and re-render
+    allRequests = allRequests.map(r =>
+      r.firestoreId === firestoreId ? { ...r, claimedAt: new Date().toISOString(), status: "in-progress" } : r
+    );
+    renderTable(allRequests);
+  } catch (err) {
+    alert("Failed to accept request: " + err.message);
+    btn.disabled    = false;
+    btn.textContent = "Accept";
+  }
+};
 
 window.filterRequests = function () {
   const s = document.getElementById("filterStatus").value;
   const c = document.getElementById("filterCategory").value;
-  renderTable(allRequests.filter(r => (!s || r.status === s) && (!c || r.category === c)));
+  const active = allRequests.filter(r => r.claimedAt && (!s || r.status === s) && (!c || r.category === c));
+  renderActiveTable(active);
 };
 
 window.updateStatus = async function (selectEl) {

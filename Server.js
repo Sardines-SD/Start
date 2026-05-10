@@ -316,8 +316,7 @@ app.patch("/api/requests/:id/assign", requireAuth, async (req, res) => {
       assignedToEmail: workerEmail,
       assignedToName: workerName,
       assignedAt: admin.firestore.FieldValue.serverTimestamp(),
-      priority: priority || "medium",
-      status: "in-progress"
+      priority: priority || "medium"
     };
     
     await requestRef.update(updateData);
@@ -539,6 +538,45 @@ app.get("/api/public/requests", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to load public requests" });
+  }
+});
+
+// ── CLAIM REQUEST (worker accepts an admin-assigned request) ──────────────────
+app.post("/api/requests/:id/claim", requireAuth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const role = await getRole(req.user.uid);
+    if (role !== "worker") {
+      return res.status(403).json({ error: "Forbidden – workers only" });
+    }
+
+    const docRef  = db.collection("requests").doc(id);
+    const docSnap = await docRef.get();
+    if (!docSnap.exists) {
+      return res.status(404).json({ error: "Request not found" });
+    }
+
+    const data = docSnap.data();
+
+    // Must have been assigned to this specific worker by admin
+    if (data.assignedTo !== req.user.uid) {
+      return res.status(403).json({ error: "This request was not assigned to you" });
+    }
+
+    // Already claimed
+    if (data.claimedAt) {
+      return res.status(400).json({ error: "You have already accepted this request" });
+    }
+
+    await docRef.update({
+      status:    "in-progress",
+      claimedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    res.json({ message: "Request accepted successfully" });
+  } catch (err) {
+    console.error("Error claiming request:", err);
+    res.status(500).json({ error: "Failed to accept request" });
   }
 });
 
