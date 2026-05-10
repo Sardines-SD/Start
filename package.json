@@ -15,7 +15,7 @@
     "collectCoverage": true,
     "collectCoverageFrom": [
       "app.js",
-      "test/helpers.js"
+      "helpers.js"
     ],
     "coverageReporters": [
       "lcov",
@@ -23,7 +23,10 @@
       "clover"
     ],
     "coverageDirectory": "coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/test/**/*.test.js"
+    ]
   },
   "dependencies": {
     "@turf/boolean-point-in-polygon": "^7.3.5",
