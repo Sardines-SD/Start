@@ -317,32 +317,26 @@
 
 <main>
   <section>
-    <h2>Login</h2>
+    <div style="text-align:center; margin-top:20px;">
+      <a href="PublicDashboard.html" class="public-dashboard-btn">
+      See Community Reports Live
+      </a>
+    </div>
+<form id="loginForm">
+  <div class="input-row">
+    <div class="input-icon">✉️</div>
+    <input type="email" id="loginEmail" placeholder="Email:" required>
+  </div>
 
-    <form id="loginForm">
-      <div class="input-row">
-        <div class="input-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="8" r="4" stroke="#6a84a0" stroke-width="1.8"/>
-            <path d="M4 20 C4 16 7.6 13 12 13 C16.4 13 20 16 20 20" stroke="#6a84a0" stroke-width="1.8" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <input type="email" id="loginEmail" placeholder="Email:" required>
-      </div>
+  <div class="input-row">
+    <div class="input-icon">🔒</div>
+    <input type="password" id="loginPassword" placeholder="Password:" required>
+  </div>
 
-      <div class="input-row">
-        <div class="input-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="5" y="11" width="14" height="10" rx="2" stroke="#6a84a0" stroke-width="1.8"/>
-            <path d="M8 11 L8 7 C8 4.8 9.8 3 12 3 C14.2 3 16 4.8 16 7 L16 11" stroke="#6a84a0" stroke-width="1.8" stroke-linecap="round"/>
-            <circle cx="12" cy="16" r="1.5" fill="#6a84a0"/>
-          </svg>
-        </div>
-        <input type="password" id="loginPassword" placeholder="Password:" required>
-      </div>
-
-      <button type="submit">Login</button>
-    </form>
+  <button type="submit" class="public-dashboard-btn">
+    Login
+  </button>
+</form>
 
     <!-- Divider -->
     <div class="divider">

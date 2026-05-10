@@ -511,6 +511,36 @@ app.get("/api/requests", requireAuth, async (req, res) => {
   }
 });
 
+//Public APi route
+app.get("/api/public/requests", async (req, res) => {
+  try {
+    const snapshot = await db.collection("requests").get();
+
+    const requests = snapshot.docs.map(doc => {
+      const data = doc.data();
+
+      return {
+        id: doc.id,
+        category: data.category || "",
+        description: data.description || "",
+        status: data.status || "pending",
+        ward: data.ward || "",
+        municipality: data.municipality || "",
+        latitude: data.latitude || null,
+        longitude: data.longitude || null,
+        createdAt: data.createdAt?.toDate().toLocaleDateString("en-ZA") ?? "",
+  
+      };
+    });
+
+    res.json(requests);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to load public requests" });
+  }
+});
+
 // ── UPDATE REQUEST STATUS ─────────────────────────────────────────────────────
 app.patch("/api/requests/:id", requireAuth, async (req, res) => {
   const { id }     = req.params;

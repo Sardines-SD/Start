@@ -134,3 +134,19 @@ output {
   border-left: 4px solid #007bff;
   border-radius: 6px;
 }
+
+/*public-dashboard-view*/
+.public-dashboard-btn {
+  display: inline-block;
+  background: #2b5fa8;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: 0.3s ease;
+}
+
+.public-dashboard-btn:hover {
+  background: #1d4b8f;
+}
