@@ -104,4 +104,8 @@ function escapeHtml(str) {
     .replace(/'/g, "&#39;");
 }
 
+function goToLogin() {
+    window.location.href = "index.html";
+}
+
 loadPublicRequests();
