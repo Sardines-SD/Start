@@ -90,14 +90,19 @@ if (logoutBtn) {
 window.switchTab = function (tab, btn) {
   const requestsPanel = document.getElementById("tab-requests");
   const usersPanel = document.getElementById("tab-users");
+  const analyticsPanel = document.getElementById("tab-analytics");
   
   if (requestsPanel) requestsPanel.classList.remove("active");
   if (usersPanel) usersPanel.classList.remove("active");
+  if (analyticsPanel) analyticsPanel.classList.remove("active");
   
   if (tab === "requests") {
     if (requestsPanel) requestsPanel.classList.add("active");
   } else if (tab === "users") {
     if (usersPanel) usersPanel.classList.add("active");
+  } else if (tab === "analytics") {
+    if (analyticsPanel) analyticsPanel.classList.add("active");
+    renderAllReports();
   }
   
   document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
@@ -529,4 +534,311 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ANALYTICS MODULE
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── HELPER: parse a date from request data ──────────────────────────────────
+function parseRequestDate(req) {
+  // Prefer resolvedAt for resolved requests (Firestore Timestamp or ISO string)
+  const raw = req.createdAt;
+  if (!raw) return null;
+  // Handle Firestore Timestamp objects serialised as {_seconds, _nanoseconds}
+  if (raw && typeof raw === "object" && raw._seconds) {
+    return new Date(raw._seconds * 1000);
+  }
+  const d = new Date(raw);
+  return isNaN(d) ? null : d;
+}
+
+function parseResolvedDate(req) {
+  const raw = req.resolvedAt;
+  if (!raw) return null;
+  if (raw && typeof raw === "object" && raw._seconds) {
+    return new Date(raw._seconds * 1000);
+  }
+  const d = new Date(raw);
+  return isNaN(d) ? null : d;
+}
+
+// ── RESOLUTION TIME in days ──────────────────────────────────────────────────
+function resolutionDays(req) {
+  if (req.status !== "resolved") return null;
+  const created = parseRequestDate(req);
+  const resolved = parseResolvedDate(req);
+  if (!created || !resolved) return null;
+  const diff = (resolved - created) / (1000 * 60 * 60 * 24);
+  return Math.max(0, parseFloat(diff.toFixed(1)));
+}
+
+// ── RENDER ALL REPORTS ───────────────────────────────────────────────────────
+function renderAllReports() {
+  renderReport1();
+  renderReport2();
+  renderReport3();
+}
+
+// ── REPORT 1: Volume & Avg Resolution Time by Category ──────────────────────
+function getReport1Data() {
+  const categories = {};
+  allRequests.forEach(req => {
+    const cat = req.category || "Unknown";
+    if (!categories[cat]) categories[cat] = { total: 0, resolvedDays: [] };
+    categories[cat].total++;
+    const days = resolutionDays(req);
+    if (days !== null) categories[cat].resolvedDays.push(days);
+  });
+
+  return Object.entries(categories).map(([cat, d]) => ({
+    category: cat,
+    total: d.total,
+    avgDays: d.resolvedDays.length
+      ? parseFloat((d.resolvedDays.reduce((a, b) => a + b, 0) / d.resolvedDays.length).toFixed(1))
+      : 0,
+    resolvedCount: d.resolvedDays.length,
+  })).sort((a, b) => b.total - a.total);
+}
+
+function renderReport1() {
+  const container = document.getElementById("report1Chart");
+  if (!container) return;
+
+  const data = getReport1Data();
+  if (!data.length) {
+    container.innerHTML = '<div class="empty-chart">No request data available.</div>';
+    return;
+  }
+
+  const maxTotal = Math.max(...data.map(d => d.total), 1);
+  const maxDays  = Math.max(...data.map(d => d.avgDays), 1);
+  const CHART_H  = 180; // px
+
+  container.innerHTML = data.map(d => {
+    const volH  = Math.max(4, Math.round((d.total / maxTotal)  * CHART_H));
+    const dayH  = Math.max(4, Math.round((d.avgDays / maxDays) * CHART_H));
+    return `
+      <div class="bar-group">
+        <div class="bar-pair">
+          <div class="bar bar-volume" style="height:${volH}px;" title="${d.total} requests">
+            <span class="bar-value-label">${d.total}</span>
+          </div>
+          <div class="bar bar-time" style="height:${dayH}px;" title="${d.avgDays} avg days">
+            <span class="bar-value-label">${d.avgDays}d</span>
+          </div>
+        </div>
+        <div class="bar-label">${escapeHtml(d.category)}</div>
+      </div>`;
+  }).join("");
+}
+
+window.exportReport1CSV = function () {
+  const data = getReport1Data();
+  const rows = [
+    ["Category", "Total Requests", "Resolved Count", "Avg Resolution Days"],
+    ...data.map(d => [d.category, d.total, d.resolvedCount, d.avgDays])
+  ];
+  downloadCSV(rows, "report1_volume_resolution.csv");
+};
+
+// ── REPORT 2: Worker Performance ─────────────────────────────────────────────
+function getReport2Data() {
+  const periodVal = document.getElementById("workerPeriodSelect")?.value || "30";
+  const now = new Date();
+  let cutoff = null;
+  if (periodVal !== "all") {
+    cutoff = new Date(now.getTime() - parseInt(periodVal) * 24 * 60 * 60 * 1000);
+  }
+
+  // Only resolved requests within the period
+  const relevant = allRequests.filter(req => {
+    if (req.status !== "resolved") return false;
+    if (!cutoff) return true;
+    const resolvedDate = parseResolvedDate(req) || parseRequestDate(req);
+    return resolvedDate && resolvedDate >= cutoff;
+  });
+
+  // Map worker uid -> stats
+  const workerMap = {};
+  relevant.forEach(req => {
+    const wid = req.assignedTo || "__unassigned__";
+    if (!workerMap[wid]) workerMap[wid] = { resolved: 0, totalDays: 0, dayCount: 0 };
+    workerMap[wid].resolved++;
+    const days = resolutionDays(req);
+    if (days !== null) { workerMap[wid].totalDays += days; workerMap[wid].dayCount++; }
+  });
+
+  // Enrich with worker names
+  return Object.entries(workerMap).map(([uid, stats]) => {
+    const worker = workersList.find(w => w.uid === uid);
+    const name = uid === "__unassigned__"
+      ? "Unassigned"
+      : (worker ? (worker.username || worker.email) : uid);
+    const avgDays = stats.dayCount
+      ? parseFloat((stats.totalDays / stats.dayCount).toFixed(1))
+      : "—";
+    return { uid, name, resolved: stats.resolved, avgDays };
+  }).sort((a, b) => b.resolved - a.resolved);
+}
+
+window.renderReport2 = function () {
+  const container = document.getElementById("report2Table");
+  if (!container) return;
+
+  const data = getReport2Data();
+  if (!data.length) {
+    container.innerHTML = '<div class="empty-chart">No resolved requests in this period.</div>';
+    return;
+  }
+
+  const maxResolved = Math.max(...data.map(d => d.resolved), 1);
+
+  container.innerHTML = `
+    <table class="worker-table">
+      <thead><tr>
+        <th>Worker</th>
+        <th>Requests Resolved</th>
+        <th>Avg Resolution Time</th>
+      </tr></thead>
+      <tbody>
+        ${data.map(d => `
+          <tr>
+            <td>${escapeHtml(d.name)}</td>
+            <td>
+              <span class="perf-bar-bg">
+                <span class="perf-bar-fill" style="width:${Math.round((d.resolved/maxResolved)*100)}%"></span>
+              </span>
+              ${d.resolved}
+            </td>
+            <td>${d.avgDays === "—" ? "—" : d.avgDays + " days"}</td>
+          </tr>`).join("")}
+      </tbody>
+    </table>`;
+};
+
+window.exportReport2CSV = function () {
+  const data = getReport2Data();
+  const rows = [
+    ["Worker", "Requests Resolved", "Avg Resolution Days"],
+    ...data.map(d => [d.name, d.resolved, d.avgDays])
+  ];
+  downloadCSV(rows, "report2_worker_performance.csv");
+};
+
+// ── REPORT 3: Custom Filtered Summary ────────────────────────────────────────
+function getReport3Data() {
+  const fromVal = document.getElementById("r3DateFrom")?.value;
+  const toVal   = document.getElementById("r3DateTo")?.value;
+  const catVal  = document.getElementById("r3Category")?.value || "";
+
+  const fromDate = fromVal ? new Date(fromVal + "T00:00:00") : null;
+  const toDate   = toVal   ? new Date(toVal   + "T23:59:59") : null;
+
+  const filtered = allRequests.filter(req => {
+    const created = parseRequestDate(req);
+    if (fromDate && created && created < fromDate) return false;
+    if (toDate   && created && created > toDate)   return false;
+    if (catVal && req.category !== catVal) return false;
+    return true;
+  });
+
+  const resolved = filtered.filter(r => r.status === "resolved");
+  const pending  = filtered.filter(r => r.status === "pending");
+  const inprog   = filtered.filter(r => r.status === "in-progress");
+
+  const daysList = resolved.map(r => resolutionDays(r)).filter(d => d !== null);
+  const avgRes   = daysList.length
+    ? parseFloat((daysList.reduce((a,b)=>a+b,0) / daysList.length).toFixed(1))
+    : null;
+
+  // Breakdown by category if "All Categories" selected
+  const catBreakdown = {};
+  filtered.forEach(r => {
+    const c = r.category || "Unknown";
+    if (!catBreakdown[c]) catBreakdown[c] = { total: 0, resolved: 0 };
+    catBreakdown[c].total++;
+    if (r.status === "resolved") catBreakdown[c].resolved++;
+  });
+
+  return { filtered, resolved, pending, inprog, avgRes, catBreakdown };
+}
+
+window.renderReport3 = function () {
+  const container = document.getElementById("report3Summary");
+  if (!container) return;
+
+  const { filtered, resolved, pending, inprog, avgRes, catBreakdown } = getReport3Data();
+
+  if (!filtered.length) {
+    container.innerHTML = '<div class="empty-chart">No requests match the selected filters.</div>';
+    return;
+  }
+
+  const breakdownRows = Object.entries(catBreakdown)
+    .sort((a, b) => b[1].total - a[1].total)
+    .map(([cat, d]) => `
+      <tr>
+        <td>${escapeHtml(cat)}</td>
+        <td>${d.total}</td>
+        <td>${d.resolved}</td>
+        <td>${d.total > 0 ? Math.round((d.resolved/d.total)*100) + "%" : "—"}</td>
+      </tr>`).join("");
+
+  container.innerHTML = `
+    <div class="custom-summary">
+      <div class="summary-stat"><h4>${filtered.length}</h4><p>Total Matching</p></div>
+      <div class="summary-stat"><h4>${pending.length}</h4><p>Pending</p></div>
+      <div class="summary-stat"><h4>${inprog.length}</h4><p>In Progress</p></div>
+      <div class="summary-stat"><h4>${resolved.length}</h4><p>Resolved</p></div>
+      <div class="summary-stat"><h4>${avgRes !== null ? avgRes + "d" : "—"}</h4><p>Avg Resolution</p></div>
+    </div>
+    <table class="worker-table" style="margin-top:20px;">
+      <thead><tr>
+        <th>Category</th><th>Total</th><th>Resolved</th><th>Resolution Rate</th>
+      </tr></thead>
+      <tbody>${breakdownRows}</tbody>
+    </table>`;
+};
+
+window.exportReport3CSV = function () {
+  const { filtered } = getReport3Data();
+  const rows = [
+    ["ID", "Category", "Status", "Priority", "User Email", "Ward", "Municipality", "Created At", "Resolved At", "Resolution Days"],
+    ...filtered.map(r => [
+      r.id || r.firestoreId,
+      r.category,
+      r.status,
+      r.priority || "",
+      r.userEmail || "",
+      r.ward || "",
+      r.municipality || "",
+      r.createdAt || "",
+      r.resolvedAt || "",
+      resolutionDays(r) ?? ""
+    ])
+  ];
+  downloadCSV(rows, "report3_custom_summary.csv");
+};
+
+// ── CSV DOWNLOAD UTILITY ──────────────────────────────────────────────────────
+function downloadCSV(rows, filename) {
+  const csv = rows.map(row =>
+    row.map(cell => {
+      const str = String(cell ?? "").replace(/"/g, '""');
+      return str.includes(",") || str.includes('"') || str.includes("\n")
+        ? `"${str}"`
+        : str;
+    }).join(",")
+  ).join("\r\n");
+
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
