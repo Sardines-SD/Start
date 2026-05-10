@@ -1,363 +1,218 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Worker Dashboard - Municipal Service Portal</title>
-  <link rel="stylesheet" href="styler.css">
-  <style>
-    /* Match User/Admin Dashboard styling */
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      background-color: #5a7fa8;
-      background-image:
-        linear-gradient(rgba(60, 90, 130, 0.60), rgba(60, 90, 130, 0.60)),
-        url('https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Johannesburg_skyline_from_ponte.jpg/1280px-Johannesburg_skyline_from_ponte.jpg');
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-      background-attachment: fixed;
-    }
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  signOut,
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { firebaseConfig } from './firebaseConfig.js';
 
-    header {
-      background: transparent;
-      box-shadow: none;
-      padding: 36px 20px 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-    }
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
 
-    .header-brand {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-    }
+let allRequests = [];
+let currentWorkerUid = null;
 
-    .header-brand h1 {
-      margin: 0;
-      font-size: 26px;
-      font-weight: 700;
-      color: #ffffff;
-      text-shadow: 0 1px 4px rgba(0,0,0,0.3);
-      text-align: left;
-      line-height: 1.3;
-    }
+// ── Auth guard — always re-check role from Firestore ─────────────────────────
+onAuthStateChanged(auth, async (user) => {
+  if (!user) { 
+    window.location.href = "index.html"; 
+    return; 
+  }
 
-    .role-tag {
-      display: inline-block;
-      background: #17a2b8;
-      color: white;
-      padding: 3px 12px;
-      border-radius: 20px;
-      font-size: 14px;
-      font-weight: bold;
-      margin-left: 12px;
-      vertical-align: middle;
-    }
+  const userDoc = await getDoc(doc(db, "users", user.uid));
+  const role    = userDoc.exists() ? userDoc.data().role : "user";
+  localStorage.setItem("role", role);
+  currentWorkerUid = user.uid;
 
-    .header-sub {
-      color: #ddeeff;
-      font-size: 15px;
-      margin: 0;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    }
+  if (role === "admin") { 
+    window.location.href = "AdminDashboard.html"; 
+    return; 
+  }
+  if (role === "user") { 
+    window.location.href = "Dashboard.html"; 
+    return; 
+  }
+  if (role !== "worker") { 
+    window.location.href = "index.html"; 
+    return; 
+  }
 
-    .header-buttons {
-      display: flex;
-      gap: 10px;
-      margin-top: 8px;
-      justify-content: center;
-    }
+  document.getElementById("welcomeMsg").textContent = "Welcome, " + user.email;
+  loadAllRequests();
+});
 
-    header button {
-      padding: 9px 22px;
-      border: none;
-      border-radius: 8px;
-      font-weight: 700;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
+async function getFreshToken() {
+  const user = auth.currentUser;
+  if (!user) return null;
+  return await user.getIdToken(true);
+}
 
-    .btn-logout {
-      background: white;
-      color: #2b5fa8;
-    }
+// ── Logout function - redirects to index.html (Login page) ───────────────────
+window.logout = async function () {
+  await signOut(auth);
+  localStorage.clear();
+  window.location.href = "index.html";
+};
 
-    .btn-logout:hover {
-      background: #e6f0ff;
-      transform: translateY(-2px);
-    }
+// ── LOGOUT BUTTON ESCAPE ANIMATION ───────────────────────────────────────────
+let logoutClickCount = 0;
 
-    .btn-profile {
-      background: #17a2b8;
-      color: white;
-    }
+const logoutBtn = document.getElementById("logoutBtn");
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", async () => {
+    logoutClickCount++;
 
-    .btn-profile:hover {
-      background: #138496;
-      transform: translateY(-2px);
+    if (logoutClickCount === 1) {
+      logoutBtn.style.transform = "translate(120px,50px)";
+    } else if (logoutClickCount === 2) {
+      logoutBtn.style.transform = "translate(0px,0px)";
+    } else {
+      await logout();
     }
+  });
+}
 
-    main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 28px 20px 40px;
-      margin: 0;
-      max-width: 100%;
-      gap: 24px;
-    }
+function getPriorityBadge(priority) {
+  if (!priority) return '<span class="badge badge-pending">Not set</span>';
+  
+  const priorityMap = {
+    low: { class: 'priority-low', label: 'Low' },
+    medium: { class: 'priority-medium', label: 'Medium' },
+    high: { class: 'priority-high', label: 'High' }
+  };
+  
+  const p = priorityMap[priority] || { class: 'badge-pending', label: priority };
+  return `<span class="badge ${p.class}">${p.label}</span>`;
+}
 
-    section {
-      background: rgba(225, 235, 250, 0.93);
-      border-radius: 12px;
-      padding: 32px 40px 28px;
-      width: 100%;
-      max-width: 1400px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-      margin-bottom: 0;
-      transform: none;
-    }
+async function loadAllRequests() {
+  const table = document.getElementById("requestsTable");
+  // FIXED: colspan 12 (table has 12 columns)
+  table.innerHTML = "<tr><td colspan='12'>Loading...</td></tr>";
 
-    section:hover {
-      transform: none;
-    }
+  try {
+    const token = await getFreshToken();
+    const res   = await fetch("/api/requests", {
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error();
+    const allData = await res.json();
+    // Filter to show only requests assigned to this worker
+    allRequests = allData.filter(req => req.assignedTo === currentWorkerUid);
+    renderTable(allRequests);
+  } catch {
+    // FIXED: colspan 12
+    table.innerHTML = "<tr><td colspan='12'>Failed to load requests. </tr>";
+  }
+}
 
-    section h2 {
-      font-size: 20px;
-      font-weight: 700;
-      color: #1a2a3a;
-      margin: 0 0 8px;
-    }
+function renderTable(data) {
+  const table = document.getElementById("requestsTable");
+  if (!data.length) { 
+    // FIXED: colspan 12
+    table.innerHTML = "<tr><td colspan='12'>No requests assigned to you. </table>";
+    return; 
+  }
+  
+  table.innerHTML = data.map(req => {
+    const hasImage = req.image && req.image !== "" && req.image !== null;
+    const imageHtml = hasImage 
+      ? `<img src="${escapeHtml(req.image)}" class="proof-image" onclick="event.stopPropagation(); openImageModal('${escapeHtml(req.image)}')" alt="Proof image" title="Click to enlarge">`
+      : '<span class="no-image">No image</span>';
+    
+    let statusClass = req.status === "in-progress" ? "inprogress" : req.status;
+    const priorityBadge = getPriorityBadge(req.priority);
+    const assignedByName = req.assignedToName || 'Unknown';
+    
+    return `
+      <tr>
+        <td>${escapeHtml(req.id)}</td>
+        <td>${escapeHtml(req.userEmail ?? "-")}</td>
+        <td>${escapeHtml(req.category)}</td>
+        <td>${escapeHtml(req.description)}</td>
+        <td class="priority-cell">${priorityBadge}</td>
+        <td class="assigned-by-cell">${escapeHtml(assignedByName)}</td>
+        <td>${req.ward || '-'}</td>
+        <td>${req.municipality || '-'}</td>
+        <td>${escapeHtml(req.createdAt ?? "-")}</td>
+        <td><span class="badge badge-${statusClass}">${escapeHtml(req.status)}</span></td>
+        <td class="proof-cell">${imageHtml}</td>
+        <td>
+          <select class="status-select" data-id="${escapeHtml(req.firestoreId)}" onchange="updateStatus(this)">
+            <option value="">Change...</option>
+            <option value="pending"     ${req.status === "pending"     ? "selected" : ""}>Pending</option>
+            <option value="in-progress" ${req.status === "in-progress" ? "selected" : ""}>In Progress</option>
+            <option value="resolved"    ${req.status === "resolved"    ? "selected" : ""}>Resolved</option>
+          </select>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
 
-    .section-subtitle {
-      color: #4a6a8a;
-      font-size: 14px;
-      margin-bottom: 20px;
-    }
+window.filterRequests = function () {
+  const s = document.getElementById("filterStatus").value;
+  const c = document.getElementById("filterCategory").value;
+  renderTable(allRequests.filter(r => (!s || r.status === s) && (!c || r.category === c)));
+};
 
-    /* Badges */
-    .badge {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 700;
-    }
-    .badge-pending     { background: #fff3cd; color: #856404; }
-    .badge-inprogress  { background: #cce5ff; color: #004085; }
-    .badge-resolved    { background: #d4edda; color: #155724; }
+window.updateStatus = async function (selectEl) {
+  const firestoreId = selectEl.dataset.id;
+  const newStatus   = selectEl.value;
+  if (!newStatus) return;
+  try {
+    const token = await getFreshToken();
+    const res   = await fetch(`/api/requests/${firestoreId}`, {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      body:    JSON.stringify({ status: newStatus }),
+    });
+    if (!res.ok) throw new Error();
+    allRequests = allRequests.map(r => r.firestoreId === firestoreId ? { ...r, status: newStatus } : r);
+    window.filterRequests();
+  } catch {
+    alert("Failed to update status. Please try again.");
+  }
+};
 
-    /* Filter bar */
-    .filter-bar {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-    }
-    .filter-bar select {
-      padding: 10px 12px;
-      margin-top: 0;
-      border-radius: 8px;
-      border: 1px solid #c8d4e0;
-      background-color: #f5f8fc;
-      font-size: 14px;
-      color: #1a2a3a;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      transition: border 0.3s, box-shadow 0.3s;
-      width: auto;
-      min-width: 140px;
-    }
-    .filter-bar select:focus {
-      border-color: #2b5fa8;
-      box-shadow: 0 0 5px rgba(43,95,168,0.3);
-      outline: none;
-    }
+// ── Image Modal Functions ─────────────────────────────────────────────────────
+window.openImageModal = function(imageSrc) {
+  const modal = document.getElementById("imageModal");
+  const modalImg = document.getElementById("modalImage");
+  if (modal && modalImg && imageSrc) {
+    modalImg.src = imageSrc;
+    modal.style.display = "block";
+  }
+};
 
-    /* Status select inside table */
-    .status-select {
-      padding: 6px 10px;
-      border-radius: 6px;
-      border: 1px solid #c8d4e0;
-      background-color: white;
-      font-size: 13px;
-      cursor: pointer;
-      width: auto;
-    }
+window.closeImageModal = function() {
+  const modal = document.getElementById("imageModal");
+  if (modal) {
+    modal.style.display = "none";
+  }
+};
 
-    /* Tables */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      border-radius: 10px;
-      overflow: hidden;
-      font-size: 14px;
-    }
-    th {
-      background: #2b5fa8;
-      color: white;
-      padding: 12px;
-      text-align: left;
-      font-weight: 600;
-    }
-    td {
-      padding: 12px;
-      border-bottom: 1px solid #d0dcea;
-      color: #2a3a4a;
-    }
-    tr:hover td {
-      background: #dde8f8;
-    }
+// Close modal with Escape key
+document.addEventListener("keydown", function(e) {
+  if (e.key === "Escape") {
+    closeImageModal();
+  }
+});
 
-    /* Image styles */
-    .proof-image {
-      max-width: 60px;
-      max-height: 60px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: transform 0.2s;
-      object-fit: cover;
-    }
-    .proof-image:hover {
-      transform: scale(1.05);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    }
-    .no-image {
-      color: #999;
-      font-style: italic;
-      font-size: 12px;
-    }
-
-    /* Image Modal */
-    .image-modal {
-      display: none;
-      position: fixed;
-      z-index: 1000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0,0,0,0.9);
-      cursor: pointer;
-    }
-    .image-modal img {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      max-width: 90%;
-      max-height: 90%;
-      border-radius: 8px;
-    }
-    .image-modal .close-modal {
-      position: absolute;
-      top: 20px;
-      right: 35px;
-      color: #fff;
-      font-size: 40px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .image-modal .close-modal:hover {
-      color: #bbb;
-    }
-
-    footer {
-      background: transparent;
-      box-shadow: none;
-      padding: 20px;
-    }
-    footer p {
-      text-align: center;
-      color: #d8e6f5;
-      font-size: 13px;
-      margin: 0;
-    }
-  </style>
-</head>
-<body>
-
-<header>
-  <div class="header-brand">
-    <svg width="58" height="58" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
-      <path d="M36 4 L64 16 L64 38 C64 54 50 65 36 70 C22 65 8 54 8 38 L8 16 Z" fill="#2b5fa8" stroke="#a8c4e8" stroke-width="1.5"/>
-      <path d="M36 10 L58 20 L58 38 C58 51 46 61 36 66 C26 61 14 51 14 38 L14 20 Z" fill="#1e4a8a"/>
-      <rect x="24" y="28" width="24" height="16" rx="3" fill="none" stroke="#ffffff" stroke-width="2"/>
-      <rect x="30" y="22" width="12" height="10" rx="3" fill="none" stroke="#ffffff" stroke-width="2"/>
-      <circle cx="36" cy="36" r="2.5" fill="#ffffff"/>
-    </svg>
-    <h1>Municipal Service Delivery<br>Reporting Portal <span class="role-tag">Worker</span></h1>
-  </div>
-  <p class="header-sub" id="welcomeMsg"></p>
-  <div class="header-buttons">
-    <button class="btn-logout" id="logoutBtn">Logout</button>
-    <button class="btn-profile" onclick="location.href='profilePage.html'">My Profile</button>
-  </div>
-</header>
-
-<main>
-  <section>
-    <h2>Assigned Service Requests</h2>
-    <p class="section-subtitle">View all submitted requests and update their status as you action them.</p>
-
-    <div class="filter-bar">
-      <select id="filterStatus" onchange="filterRequests()">
-        <option value="">All statuses</option>
-        <option value="pending">Pending</option>
-        <option value="in-progress">In Progress</option>
-        <option value="resolved">Resolved</option>
-      </select>
-      <select id="filterCategory" onchange="filterRequests()">
-        <option value="">All categories</option>
-        <option value="Pothole">Pothole</option>
-        <option value="Water">Water Issue</option>
-        <option value="Electricity">Electricity</option>
-        <option value="Waste">Waste</option>
-      </select>
-    </div>
-
-    <article>
-      <div style="overflow-x: auto;">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Submitted By</th>
-              <th>Category</th>
-              <th>Description</th>
-              <th>Ward</th>
-              <th>Municipality</th>
-              <th>Date</th>
-              <th>Status</th>
-              <th>Proof</th>
-              <th>Update Status</th>
-            <tr>
-          </thead>
-          <tbody id="requestsTable"></tbody>
-        </table>
-      </div>
-    </article>
-  </section>
-</main>
-
-<footer>
-  <p>&copy; 2026 Municipal Service Delivery Portal</p>
-</footer>
-
-<!-- Image Modal for fullscreen viewing -->
-<div id="imageModal" class="image-modal" onclick="closeImageModal()">
-  <span class="close-modal">&times;</span>
-  <img id="modalImage" src="" alt="Full size proof image">
-</div>
-
-<script type="module" src="workerDashboard.js"></script>
-</body>
-</html>
+// ── Helper: Escape HTML to prevent XSS (FIXED: handles 0 correctly) ───────────
+function escapeHtml(str) {
+  if (str === null || str === undefined) return "";
+  
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}

@@ -187,6 +187,21 @@
     .badge-user        { background: #e2e3e5; color: #383d41; }
     .badge-worker      { background: #d1ecf1; color: #0c5460; }
     .badge-admin       { background: #f8d7da; color: #721c24; }
+    
+    .priority-low {
+      background: #d4edda;
+      color: #155724;
+    }
+    
+    .priority-medium {
+      background: #fff3cd;
+      color: #856404;
+    }
+    
+    .priority-high {
+      background: #f8d7da;
+      color: #721c24;
+    }
 
     /* Form elements */
     select,
@@ -209,6 +224,49 @@
       border-color: #2b5fa8;
       box-shadow: 0 0 5px rgba(43,95,168,0.3);
       outline: none;
+    }
+    
+    .assign-dropdown {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #c8d4e0;
+      background-color: white;
+      font-size: 13px;
+      cursor: pointer;
+      width: 140px;
+    }
+    
+    .assign-btn {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s;
+      margin-left: 5px;
+    }
+    
+    .assign-btn:hover {
+      background: #218838;
+      transform: scale(1.02);
+    }
+    
+    .assign-btn:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+    }
+    
+    .priority-dropdown {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #c8d4e0;
+      background-color: white;
+      font-size: 13px;
+      cursor: pointer;
+      width: 100px;
     }
 
     .filter-bar {
@@ -387,8 +445,8 @@
       color: #bbb;
     }
 
-	.feedback-given { font-size: 0.88rem; color: #6b7280; }
-	.star-gold { color: #f59e0b; }
+    .feedback-given { font-size: 0.88rem; color: #6b7280; }
+    .star-gold { color: #f59e0b; }
     
 
     footer {
@@ -436,8 +494,8 @@
   </div>
 
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('requests')">All Requests</button>
-    <button class="tab-btn" onclick="switchTab('users')">Manage Users</button>
+    <button class="tab-btn active" onclick="switchTab('requests', this)">All Requests</button>
+    <button class="tab-btn" onclick="switchTab('users', this)">Manage Users</button>
   </div>
 
   <section class="tab-panel active" id="tab-requests">
@@ -476,15 +534,17 @@
               <th>User</th>
               <th>Category</th>
               <th>Description</th>
+              <th>Priority</th>
               <th>Ward</th>
               <th>Municipality</th>
-	      <th>Address</th>
-	      <th>Location</th>
+              <th>Address</th>
+              <th>Location</th>
               <th>Date</th>
               <th>Status</th>
-	      <th>Feedback</th>
+              <th>Feedback</th>
               <th>Proof</th>
               <th>Update</th>
+              <th>Assign to Worker</th>
             </tr>
           </thead>
           <tbody id="requestsTable"></tbody>

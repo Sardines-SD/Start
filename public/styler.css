@@ -134,3 +134,74 @@ output {
   border-left: 4px solid #007bff;
   border-radius: 6px;
 }
+
+/* Priority Badge Styles */
+.priority-low {
+  background: #d4edda;
+  color: #155724;
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.priority-medium {
+  background: #fff3cd;
+  color: #856404;
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.priority-high {
+  background: #f8d7da;
+  color: #721c24;
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Assign Dropdown Styles */
+.assign-dropdown {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  background-color: white;
+  font-size: 13px;
+  cursor: pointer;
+  width: 140px;
+}
+
+.assign-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s;
+  margin-left: 5px;
+  margin-top: 0;
+}
+
+.assign-btn:hover {
+  background: #218838;
+  transform: translateY(-1px);
+}
+
+.priority-dropdown {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  background-color: white;
+  font-size: 13px;
+  cursor: pointer;
+  width: 100px;
+}

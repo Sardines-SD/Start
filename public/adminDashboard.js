@@ -17,6 +17,7 @@ const db = getFirestore(app);
 
 let allRequests = [];
 let currentAdminId = null;
+let workersList = [];
 
 // Auth guard - always re-check role from Firestore
 onAuthStateChanged(auth, async (user) => {
@@ -44,6 +45,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   document.getElementById("welcomeMsg").textContent = "Admin: " + user.email;
+  await loadWorkers();
   loadAllRequests();
   loadAllUsers();
 });
@@ -65,7 +67,141 @@ window.logout = async function () {
   }
 };
 
-// ── LOGOUT BUTTON ESCAPE ANIMATION ───────────────────────────────────────────
+async function loadWorkers() {
+  try {
+    const token = await getFreshToken();
+    const res = await fetch("/api/workers", {
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+    });
+    
+    if (res.ok) {
+      workersList = await res.json();
+    }
+  } catch (error) {
+    console.error("Error loading workers:", error);
+    workersList = [];
+  }
+}
+
+// FIXED: New function with proper element IDs
+window.assignRequestWithPriority = async function(requestId) {
+  const workerSelect = document.getElementById(`worker-select-${requestId}`);
+  const prioritySelect = document.getElementById(`priority-${requestId}`);
+  
+  const workerUid = workerSelect ? workerSelect.value : null;
+  const priority = prioritySelect ? prioritySelect.value : "medium";
+  
+  if (!workerUid) {
+    alert("Please select a worker first");
+    return;
+  }
+  
+  try {
+    const token = await getFreshToken();
+    const res = await fetch(`/api/requests/${requestId}/assign`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ 
+        workerUid: workerUid,
+        priority: priority
+      }),
+    });
+    
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Assignment failed");
+    }
+    
+    alert("Request assigned successfully! Worker has been notified by email.");
+    loadAllRequests();
+  } catch (error) {
+    console.error("Assign error:", error);
+    alert("Failed to assign request: " + error.message);
+  }
+};
+
+window.updatePriority = async function(requestId, priority) {
+  if (!priority) return;
+  
+  try {
+    const token = await getFreshToken();
+    const res = await fetch(`/api/requests/${requestId}/priority`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ priority: priority }),
+    });
+    
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Priority update failed");
+    }
+    
+    allRequests = allRequests.map(r =>
+      r.firestoreId === requestId ? { ...r, priority: priority } : r
+    );
+    
+    filterRequests();
+  } catch (error) {
+    console.error("Priority update error:", error);
+    alert("Failed to update priority: " + error.message);
+  }
+};
+
+function getPriorityBadge(priority) {
+  if (!priority) return '<span class="badge badge-pending">Not set</span>';
+  
+  const priorityMap = {
+    low: { class: 'priority-low', label: 'Low' },
+    medium: { class: 'priority-medium', label: 'Medium' },
+    high: { class: 'priority-high', label: 'High' }
+  };
+  
+  const p = priorityMap[priority] || { class: 'badge-pending', label: priority };
+  return `<span class="badge ${p.class}">${p.label}</span>`;
+}
+
+// FIXED: getAssignDropdown with unique IDs
+function getAssignDropdown(requestId, currentAssignedTo, currentPriority) {
+  if (workersList.length === 0) {
+    return '<span style="color:#999;">No workers available</span>';
+  }
+  
+  const workerOptions = workersList.map(w => 
+    `<option value="${w.uid}" ${currentAssignedTo === w.uid ? 'selected' : ''}>${escapeHtml(w.username || w.email)}</option>`
+  ).join('');
+  
+  const priorityId = `priority-${requestId}`;
+  const workerSelectId = `worker-select-${requestId}`;
+  
+  return `
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <select class="priority-dropdown" id="${priorityId}" data-id="${requestId}" onchange="updatePriority('${requestId}', this.value)">
+        <option value="low" ${currentPriority === 'low' ? 'selected' : ''}>Low</option>
+        <option value="medium" ${currentPriority === 'medium' ? 'selected' : ''}>Medium</option>
+        <option value="high" ${currentPriority === 'high' ? 'selected' : ''}>High</option>
+      </select>
+      <div style="display: flex; gap: 5px;">
+        <select class="assign-dropdown" id="${workerSelectId}">
+          <option value="">Select worker...</option>
+          ${workerOptions}
+        </select>
+        <button class="assign-btn" onclick="assignRequestWithPriority('${requestId}')">
+          Assign
+        </button>
+      </div>
+    </div>
+  `;
+}
+
 let logoutClickCount = 0;
 
 const logoutBtn = document.getElementById("logoutBtn");
@@ -74,25 +210,21 @@ if (logoutBtn) {
     logoutClickCount++;
 
     if (logoutClickCount === 1) {
-      // First click — slide right
       logoutBtn.style.transform = "translate(120px,80px)";
     } else if (logoutClickCount === 2) {
-      // Second click — slide back to original
       logoutBtn.style.transform = "translate(0px,0px)";
     } else {
-      // Third click — actually log out
       await logout();
     }
   });
 }
 
-window.switchTab = function (tab) {
+// FIXED: switchTab function with proper 'btn' parameter
+window.switchTab = function (tab, btn) {
   document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
   document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
   document.getElementById("tab-" + tab).classList.add("active");
-  if (event && event.target) {
-    event.target.classList.add("active");
-  }
+  btn.classList.add("active");
 };
 
 window.openImageModal = function (imageSrc) {
@@ -119,7 +251,8 @@ document.addEventListener("keydown", function (e) {
 
 async function loadAllRequests() {
   const table = document.getElementById("requestsTable");
-  table.innerHTML = "<tr><td colspan='10'>Loading...";
+  // FIXED: colspan 15 (table has 15 columns)
+  table.innerHTML = "<table><td colspan='15'>Loading...</td></tr>";
 
   try {
     const token = await getFreshToken();
@@ -136,7 +269,8 @@ async function loadAllRequests() {
     updateStats(allRequests);
     filterRequests();
   } catch {
-    table.innerHTML = "<tr><td colspan='10'>Failed to load requests.";
+    // FIXED: colspan 15
+    table.innerHTML = "<tr><td colspan='15'>Failed to load requests.</td></tr>";
   }
 }
 
@@ -144,7 +278,8 @@ function renderRequestsTable(data) {
   const table = document.getElementById("requestsTable");
 
   if (!data.length) {
-    table.innerHTML = "<td><td colspan='10'>No requests found.";
+    // FIXED: colspan 15
+    table.innerHTML = "<tr><td colspan='15'>No requests found.</td></tr>";
     return;
   }
 
@@ -155,42 +290,41 @@ function renderRequestsTable(data) {
       : '<span class="no-image">No image</span>';
 
     const statusClass = req.status === "in-progress" ? "inprogress" : req.status;
+    
+    const priorityBadge = getPriorityBadge(req.priority);
+    const assignHtml = getAssignDropdown(req.firestoreId, req.assignedTo, req.priority);
 
-
-// Admin feedback display cell
-let adminFeedbackCell = '<td>—</td>';
-if (req.status === 'resolved' && req.feedbackSubmitted) {
-  const filled = '★'.repeat(req.feedbackRating || 0);
-  const empty  = '☆'.repeat(5 - (req.feedbackRating || 0));
-  const tip    = req.feedbackComment ? escapeHtml(req.feedbackComment) : 'No comment';
-  adminFeedbackCell = `
-    <td>
-      <span class="feedback-given star-gold" title="${tip}">${filled}</span><span class="feedback-given">${empty}</span>
-      <br><small style="color:#9ca3af">${req.feedbackComment ? escapeHtml(req.feedbackComment.substring(0,40)) + (req.feedbackComment.length > 40 ? '…' : '') : ''}</small>
-    </td>`;
-} else if (req.status === 'resolved') {
-  adminFeedbackCell = `<td><small style="color:#9ca3af">Awaiting</small></td>`;
-}	
+    let adminFeedbackCell = '<td>—</td>';
+    if (req.status === 'resolved' && req.feedbackSubmitted) {
+      const filled = '★'.repeat(req.feedbackRating || 0);
+      const empty  = '☆'.repeat(5 - (req.feedbackRating || 0));
+      const tip    = req.feedbackComment ? escapeHtml(req.feedbackComment) : 'No comment';
+      adminFeedbackCell = `
+        <td class="feedback-cell">
+          <span class="feedback-given star-gold" title="${tip}">${filled}</span><span class="feedback-given">${empty}</span>
+          <br><small style="color:#9ca3af">${req.feedbackComment ? escapeHtml(req.feedbackComment.substring(0,40)) + (req.feedbackComment.length > 40 ? '…' : '') : ''}</small>
+        </td>`;
+    } else if (req.status === 'resolved') {
+      adminFeedbackCell = '<td class="feedback-cell"><small style="color:#9ca3af">Awaiting</small></td>';
+    }
+    
     return `
       <tr>
         <td>${escapeHtml(req.id)}</td>
         <td>${escapeHtml(req.userEmail ?? "-")}</td>
         <td>${escapeHtml(req.category)}</td>
         <td>${escapeHtml(req.description)}</td>
+        <td class="priority-cell">${priorityBadge}</td>
         <td>${req.ward || 'Unknown'}</td>
         <td>${req.municipality || 'Unknown'}</td>
-	<td>${escapeHtml(req.address || '-')}</td>
-	<td>
-  		${
-    req.latitude && req.longitude
-      ? `<a href="https://maps.google.com/?q=${req.latitude},${req.longitude}" target="_blank">
-          View Map
-        </a>`
-      : '-'
-  }
-	</td>
+        <td>${escapeHtml(req.address || '-')}</td>
+        <td>
+          ${req.latitude && req.longitude
+            ? `<a href="https://maps.google.com/?q=${req.latitude},${req.longitude}" target="_blank">View Map</a>`
+            : '-'}
+        </td>
         <td>${escapeHtml(req.createdAt ?? "-")}</td>
-       <td><span class="badge badge-${statusClass}">${escapeHtml(req.status)}</span></td>
+        <td><span class="badge badge-${statusClass}">${escapeHtml(req.status)}</span></td>
         ${adminFeedbackCell}
         <td class="proof-cell">${imageHtml}</td>
         <td>
@@ -204,6 +338,7 @@ if (req.status === 'resolved' && req.feedbackSubmitted) {
                </select>`
           }
         </td>
+        <td class="assign-cell">${assignHtml}</td>
       </tr>
     `;
   }).join("");
@@ -214,14 +349,6 @@ function updateStats(data) {
   document.getElementById("pendingCount").textContent = data.filter(r => r.status === "pending").length;
   document.getElementById("inprogressCount").textContent = data.filter(r => r.status === "in-progress").length;
   document.getElementById("resolvedCount").textContent = data.filter(r => r.status === "resolved").length;
-
-  const rated = data.filter(r => r.feedbackSubmitted && r.feedbackRating);
-  const avgEl = document.getElementById("avgRatingDisplay");
-  if (avgEl) {
-    avgEl.textContent = rated.length
-      ? (rated.reduce((sum, r) => sum + r.feedbackRating, 0) / rated.length).toFixed(1) + " / 5"
-      : "No ratings yet";
-  }
 }
 
 window.filterRequests = function () {
@@ -277,7 +404,7 @@ window.updateStatus = async function (selectEl) {
 
 async function loadAllUsers() {
   const table = document.getElementById("usersTable");
-  table.innerHTML = "<tr><td colspan='7'>Loading...";
+  table.innerHTML = "<tr><td colspan='7'>Loading...</td></tr>";
 
   try {
     const token = await getFreshToken();
@@ -294,7 +421,7 @@ async function loadAllUsers() {
     document.getElementById("userCount").textContent = users.length;
 
     if (!users.length) {
-      table.innerHTML = "<tr><td colspan='7'>No users found.";
+      table.innerHTML = "<tr><td colspan='7'>No users found.</td></tr>";
       return;
     }
 
@@ -304,8 +431,6 @@ async function loadAllUsers() {
         <td>${escapeHtml(u.email)}</td>
         <td>${u.ward || '-'}</td>
         <td>${u.municipality || '-'}</td>
-	
-
         <td><span class="badge badge-${escapeHtml(u.role)}">${escapeHtml(u.role)}</span></td>
         <td>
           <select class="role-select" data-uid="${escapeHtml(u.uid)}" onchange="updateRole(this)">
@@ -323,7 +448,7 @@ async function loadAllUsers() {
       </tr>
     `).join("");
   } catch {
-    table.innerHTML = "<tr><td colspan='7'>Failed to load users.";
+    table.innerHTML = "<tr><td colspan='7'>Failed to load users.</tr></tr>";
   }
 }
 
@@ -352,6 +477,7 @@ window.updateRole = async function (selectEl) {
 
     alert("Role updated. The user will see the change on their next login.");
     loadAllUsers();
+    loadWorkers();
   } catch {
     alert("Failed to update role.");
   }
@@ -391,14 +517,17 @@ window.deleteUserDirect = async function (uid, email) {
     alert(`User "${email}" has been permanently deleted.`);
     loadAllUsers();
     loadAllRequests();
+    loadWorkers();
   } catch (error) {
     console.error("Delete error:", error);
     alert("Failed to delete user: " + error.message);
   }
 };
 
+// FIXED: escapeHtml handles 0 correctly
 function escapeHtml(str) {
-  if (!str) return "";
+  if (str === null || str === undefined) return "";
+  
   return String(str)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")

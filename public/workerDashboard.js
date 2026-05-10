@@ -16,10 +16,10 @@ const auth = getAuth(app);
 const db   = getFirestore(app);
 
 let allRequests = [];
+let currentWorkerUid = null;
 
 // ── Auth guard — always re-check role from Firestore ─────────────────────────
 onAuthStateChanged(auth, async (user) => {
-  // If no user is logged in, redirect to index.html (Login page)
   if (!user) { 
     window.location.href = "index.html"; 
     return; 
@@ -28,8 +28,8 @@ onAuthStateChanged(auth, async (user) => {
   const userDoc = await getDoc(doc(db, "users", user.uid));
   const role    = userDoc.exists() ? userDoc.data().role : "user";
   localStorage.setItem("role", role);
+  currentWorkerUid = user.uid;
 
-  // Role-based redirects
   if (role === "admin") { 
     window.location.href = "AdminDashboard.html"; 
     return; 
@@ -69,38 +69,54 @@ if (logoutBtn) {
     logoutClickCount++;
 
     if (logoutClickCount === 1) {
-      // First click — slide right
       logoutBtn.style.transform = "translate(120px,50px)";
     } else if (logoutClickCount === 2) {
-      // Second click — slide back to original
       logoutBtn.style.transform = "translate(0px,0px)";
     } else {
-      // Third click — actually log out
       await logout();
     }
   });
 }
 
+function getPriorityBadge(priority) {
+  if (!priority) return '<span class="badge badge-pending">Not set</span>';
+  
+  const priorityMap = {
+    low: { class: 'priority-low', label: 'Low' },
+    medium: { class: 'priority-medium', label: 'Medium' },
+    high: { class: 'priority-high', label: 'High' }
+  };
+  
+  const p = priorityMap[priority] || { class: 'badge-pending', label: priority };
+  return `<span class="badge ${p.class}">${p.label}</span>`;
+}
+
 async function loadAllRequests() {
   const table = document.getElementById("requestsTable");
-  table.innerHTML = "<tr><td colspan='10'>Loading...";
+  // FIXED: colspan 12 (table has 12 columns)
+  table.innerHTML = "<tr><td colspan='12'>Loading...</td></tr>";
+
   try {
     const token = await getFreshToken();
     const res   = await fetch("/api/requests", {
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
     });
     if (!res.ok) throw new Error();
-    allRequests = await res.json();
+    const allData = await res.json();
+    // Filter to show only requests assigned to this worker
+    allRequests = allData.filter(req => req.assignedTo === currentWorkerUid);
     renderTable(allRequests);
   } catch {
-    table.innerHTML = "<tr><td colspan='10'>Failed to load requests.";
+    // FIXED: colspan 12
+    table.innerHTML = "<tr><td colspan='12'>Failed to load requests. </tr>";
   }
 }
 
 function renderTable(data) {
   const table = document.getElementById("requestsTable");
   if (!data.length) { 
-    table.innerHTML = "<tr><td colspan='10'>No requests found."; 
+    // FIXED: colspan 12
+    table.innerHTML = "<tr><td colspan='12'>No requests assigned to you. </table>";
     return; 
   }
   
@@ -111,6 +127,8 @@ function renderTable(data) {
       : '<span class="no-image">No image</span>';
     
     let statusClass = req.status === "in-progress" ? "inprogress" : req.status;
+    const priorityBadge = getPriorityBadge(req.priority);
+    const assignedByName = req.assignedToName || 'Unknown';
     
     return `
       <tr>
@@ -118,6 +136,8 @@ function renderTable(data) {
         <td>${escapeHtml(req.userEmail ?? "-")}</td>
         <td>${escapeHtml(req.category)}</td>
         <td>${escapeHtml(req.description)}</td>
+        <td class="priority-cell">${priorityBadge}</td>
+        <td class="assigned-by-cell">${escapeHtml(assignedByName)}</td>
         <td>${req.ward || '-'}</td>
         <td>${req.municipality || '-'}</td>
         <td>${escapeHtml(req.createdAt ?? "-")}</td>
@@ -185,9 +205,10 @@ document.addEventListener("keydown", function(e) {
   }
 });
 
-// ── Helper: Escape HTML to prevent XSS ─────────────────────────────────────────
+// ── Helper: Escape HTML to prevent XSS (FIXED: handles 0 correctly) ───────────
 function escapeHtml(str) {
-  if (!str) return "";
+  if (str === null || str === undefined) return "";
+  
   return String(str)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
