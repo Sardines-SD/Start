@@ -159,20 +159,7 @@ output {
   background: #1d4b8f;
 }
 
+
 .top-bar {
-    padding: 15px 20px;
-}
-
-.top-bar button {
-    background-color: #1e3a5f;
-    color: white;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-.top-bar button:hover {
-    background-color: #2d4f7a;
+    margin: 20px 0;
 }
