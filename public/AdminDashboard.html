@@ -107,45 +107,20 @@
 
     main {
       flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
       padding: 28px 20px 40px;
-      margin: 0;
       max-width: 100%;
-      gap: 24px;
-    }
-
-    section {
-      background: rgba(225, 235, 250, 0.93);
-      border-radius: 12px;
-      padding: 32px 40px 28px;
-      width: 100%;
-      max-width: 1400px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-      margin-bottom: 0;
-      transform: none;
-    }
-
-    section:hover {
-      transform: none;
-    }
-
-    section h2 {
-      font-size: 20px;
-      font-weight: 700;
-      color: #1a2a3a;
-      margin: 0 0 20px;
     }
 
     /* Stats Cards */
     .stats {
       display: flex;
       gap: 16px;
-      margin-bottom: 0;
+      margin-bottom: 24px;
       flex-wrap: wrap;
       width: 100%;
       max-width: 1400px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .stat-card {
@@ -181,60 +156,22 @@
       font-weight: 700;
     }
 
-    .badge-pending     { background: #fff3cd; color: #856404; }
-    .badge-inprogress  { background: #cce5ff; color: #004085; }
-    .badge-resolved    { background: #d4edda; color: #155724; }
-    .badge-user        { background: #e2e3e5; color: #383d41; }
-    .badge-worker      { background: #d1ecf1; color: #0c5460; }
-    .badge-admin       { background: #f8d7da; color: #721c24; }
+    .badge-pending { background: #fff3cd; color: #856404; }
+    .badge-inprogress { background: #cce5ff; color: #004085; }
+    .badge-resolved { background: #d4edda; color: #155724; }
+    .badge-user { background: #e2e3e5; color: #383d41; }
+    .badge-worker { background: #d1ecf1; color: #0c5460; }
+    .badge-admin { background: #f8d7da; color: #721c24; }
 
-    /* Form elements */
-    select,
-    input[type="text"],
-    .filter-bar select,
-    .filter-bar input[type="text"] {
-      padding: 10px 12px;
-      margin-top: 0;
-      border-radius: 8px;
-      border: 1px solid #c8d4e0;
-      background-color: #f5f8fc;
-      font-size: 14px;
-      color: #1a2a3a;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      transition: border 0.3s, box-shadow 0.3s;
-    }
-
-    select:focus,
-    input[type="text"]:focus {
-      border-color: #2b5fa8;
-      box-shadow: 0 0 5px rgba(43,95,168,0.3);
-      outline: none;
-    }
-
-    .filter-bar {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-      align-items: center;
-    }
-
-    .filter-bar select {
-      width: auto;
-      min-width: 140px;
-    }
-
-    .filter-bar input[type="text"] {
-      min-width: 240px;
-      flex: 1;
-      max-width: 320px;
-    }
+    .priority-low { background: #d4edda; color: #155724; }
+    .priority-medium { background: #fff3cd; color: #856404; }
+    .priority-high { background: #f8d7da; color: #721c24; }
 
     /* Tabs */
     .tabs {
       display: flex;
       gap: 0;
-      margin-bottom: 0;
+      margin-bottom: 20px;
     }
 
     .tab-btn {
@@ -267,8 +204,220 @@
       display: block;
     }
 
-    /* Tables */
-    table {
+    /* Split View Container (for Requests tab) */
+    .split-container {
+      display: flex;
+      gap: 20px;
+      height: calc(100vh - 400px);
+      min-height: 450px;
+    }
+
+    /* LEFT PANEL - Request List */
+    .left-panel {
+      width: 40%;
+      background: rgba(225, 235, 250, 0.93);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+      overflow-y: auto;
+    }
+
+    /* RIGHT PANEL - Details */
+    .right-panel {
+      width: 60%;
+      background: rgba(225, 235, 250, 0.93);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+      overflow-y: auto;
+    }
+
+    /* Search Filter */
+    .search-filter {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .search-filter input, .search-filter select {
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #c8d4e0;
+      background-color: #f5f8fc;
+      font-size: 14px;
+      color: #1a2a3a;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .search-filter input {
+      flex: 1;
+      min-width: 150px;
+    }
+
+    .search-filter select {
+      width: auto;
+    }
+
+    /* Request List Items */
+    .request-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .request-item {
+      background: rgba(255,255,255,0.7);
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .request-item:hover {
+      background: white;
+      transform: translateX(5px);
+    }
+
+    .request-item.selected {
+      background: white;
+      border-left: 4px solid #2b5fa8;
+    }
+
+    .request-title {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .request-id {
+      font-weight: 700;
+      color: #2b5fa8;
+    }
+
+    .request-category {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .request-desc {
+      font-size: 13px;
+      color: #4a6a8a;
+      margin: 5px 0;
+    }
+
+    .request-meta {
+      display: flex;
+      gap: 15px;
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 8px;
+    }
+
+    /* Detail Card */
+    .detail-card {
+      background: rgba(255,255,255,0.7);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .detail-card h2 {
+      margin: 0 0 20px;
+      color: #1a2a3a;
+      font-size: 20px;
+      border-bottom: 2px solid #c8d4e0;
+      padding-bottom: 10px;
+    }
+
+    .info-row {
+      margin-bottom: 15px;
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    .label {
+      font-weight: 700;
+      color: #4a6a8a;
+      width: 120px;
+    }
+
+    .info-value {
+      flex: 1;
+      color: #1a2a3a;
+    }
+
+    .proof-image {
+      max-width: 200px;
+      max-height: 150px;
+      border-radius: 8px;
+      cursor: pointer;
+      object-fit: cover;
+    }
+
+    .no-image {
+      color: #999;
+      font-style: italic;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    .controls select, .controls button {
+      padding: 10px 15px;
+      border-radius: 8px;
+      border: 1px solid #c8d4e0;
+      background-color: white;
+      font-size: 13px;
+    }
+
+    .controls button {
+      background: #28a745;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .controls button:hover {
+      background: #218838;
+    }
+
+    .feedback-stars {
+      color: #f59e0b;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #6b7280;
+      padding: 40px;
+    }
+
+    /* Users Table - ORIGINAL STYLE RESTORED */
+    .users-section {
+      background: rgba(225, 235, 250, 0.93);
+      border-radius: 12px;
+      padding: 32px 40px 28px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    }
+
+    .users-section h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1a2a3a;
+      margin: 0 0 20px;
+    }
+
+    .users-table-container {
+      overflow-x: auto;
+    }
+
+    .users-table {
       width: 100%;
       border-collapse: collapse;
       border-radius: 10px;
@@ -276,7 +425,7 @@
       font-size: 14px;
     }
 
-    th {
+    .users-table th {
       background: #2b5fa8;
       color: white;
       padding: 12px;
@@ -284,18 +433,16 @@
       font-weight: 600;
     }
 
-    td {
+    .users-table td {
       padding: 12px;
       border-bottom: 1px solid #d0dcea;
       color: #2a3a4a;
     }
 
-    tr:hover td {
+    .users-table tr:hover td {
       background: #dde8f8;
     }
 
-    /* Status select inside table */
-    .status-select,
     .role-select {
       padding: 6px 10px;
       border-radius: 6px;
@@ -306,7 +453,6 @@
       width: auto;
     }
 
-    /* Delete button styles */
     .delete-user-btn {
       background: #dc3545;
       color: white;
@@ -327,27 +473,6 @@
     .delete-user-btn:disabled {
       background: #6c757d;
       cursor: not-allowed;
-    }
-
-    /* Image styles */
-    .proof-image {
-      max-width: 60px;
-      max-height: 60px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: transform 0.2s;
-      object-fit: cover;
-    }
-
-    .proof-image:hover {
-      transform: scale(1.05);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    }
-
-    .no-image {
-      color: #999;
-      font-style: italic;
-      font-size: 12px;
     }
 
     /* Image Modal */
@@ -387,9 +512,8 @@
       color: #bbb;
     }
 
-	.feedback-given { font-size: 0.88rem; color: #6b7280; }
-	.star-gold { color: #f59e0b; }
-    
+    .feedback-given { font-size: 0.88rem; color: #6b7280; }
+    .star-gold { color: #f59e0b; }
 
     footer {
       background: transparent;
@@ -402,6 +526,15 @@
       color: #d8e6f5;
       font-size: 13px;
       margin: 0;
+    }
+
+    @media (max-width: 800px) {
+      .split-container {
+        flex-direction: column;
+      }
+      .left-panel, .right-panel {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -427,6 +560,7 @@
 
 <main>
 
+  <!-- STATS CARDS -->
   <div class="stats">
     <div class="stat-card"><h3 id="totalCount">-</h3><p>Total Requests</p></div>
     <div class="stat-card"><h3 id="pendingCount">-</h3><p>Pending</p></div>
@@ -435,70 +569,58 @@
     <div class="stat-card"><h3 id="userCount">-</h3><p>Registered Users</p></div>
   </div>
 
+  <!-- TABS -->
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('requests')">All Requests</button>
-    <button class="tab-btn" onclick="switchTab('users')">Manage Users</button>
+    <button class="tab-btn active" onclick="switchTab('requests', this)">All Requests</button>
+    <button class="tab-btn" onclick="switchTab('users', this)">Manage Users</button>
   </div>
 
-  <section class="tab-panel active" id="tab-requests">
-    <h2>All Service Requests</h2>
+  <!-- REQUESTS TAB -->
+  <div class="tab-panel active" id="tab-requests">
+    <div class="split-container">
 
-    <div class="filter-bar">
-      <input
-        type="text"
-        id="searchInput"
-        placeholder="Search by user, category, description, or status..."
-        oninput="filterRequests()"
-      >
+      <!-- LEFT PANEL - Request List -->
+      <div class="left-panel">
+        <div class="search-filter">
+          <input type="text" id="searchInput" placeholder="Search by user, category, description...">
+          <select id="filterStatus">
+            <option value="">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="in-progress">In Progress</option>
+            <option value="resolved">Resolved</option>
+          </select>
+          <select id="filterCategory">
+            <option value="">All Categories</option>
+            <option value="Pothole">Pothole</option>
+            <option value="Water">Water Issue</option>
+            <option value="Electricity">Electricity</option>
+            <option value="Waste">Waste</option>
+          </select>
+        </div>
 
-      <select id="filterStatus" onchange="filterRequests()">
-        <option value="">All statuses</option>
-        <option value="pending">Pending</option>
-        <option value="in-progress">In Progress</option>
-        <option value="resolved">Resolved</option>
-      </select>
-
-      <select id="filterCategory" onchange="filterRequests()">
-        <option value="">All categories</option>
-        <option value="Pothole">Pothole</option>
-        <option value="Water">Water Issue</option>
-        <option value="Electricity">Electricity</option>
-        <option value="Waste">Waste</option>
-      </select>
-    </div>
-
-    <article>
-      <div style="overflow-x: auto;">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>User</th>
-              <th>Category</th>
-              <th>Description</th>
-              <th>Ward</th>
-              <th>Municipality</th>
-	      <th>Address</th>
-	      <th>Location</th>
-              <th>Date</th>
-              <th>Status</th>
-	      <th>Feedback</th>
-              <th>Proof</th>
-              <th>Update</th>
-            </tr>
-          </thead>
-          <tbody id="requestsTable"></tbody>
-        </table>
+        <div class="request-list" id="requestList">
+          <div class="empty-state">Loading requests...</div>
+        </div>
       </div>
-    </article>
-  </section>
 
-  <section class="tab-panel" id="tab-users">
-    <h2>Manage Users</h2>
-    <p style="color:#4a6a8a; font-size:14px; margin-bottom:20px;">Change user roles or delete accounts. You cannot delete your own account.</p>
-    <article>
-      <div style="overflow-x: auto;">
-        <table>
+      <!-- RIGHT PANEL - Request Details -->
+      <div class="right-panel">
+        <div class="detail-card" id="detailCard">
+          <h2>Select a Request</h2>
+          <p class="empty-state">Click on any request from the left panel to view and manage details.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- USERS TAB - RESTORED ORIGINAL STYLE -->
+  <div class="tab-panel" id="tab-users">
+    <div class="users-section">
+      <h2>Manage Users</h2>
+      <p style="color:#4a6a8a; font-size:14px; margin-bottom:20px;">Change user roles or delete accounts. You cannot delete your own account.</p>
+      <div class="users-table-container">
+        <table class="users-table">
           <thead>
             <tr>
               <th>Username</th>
@@ -513,8 +635,8 @@
           <tbody id="usersTable"></tbody>
         </table>
       </div>
-    </article>
-  </section>
+    </div>
+  </div>
 
 </main>
 

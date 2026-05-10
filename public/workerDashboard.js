@@ -16,6 +16,7 @@ const auth = getAuth(app);
 const db   = getFirestore(app);
 
 let allRequests = [];
+let currentWorkerUid = null;
 
 // ── Auth guard — always re-check role from Firestore ─────────────────────────
 onAuthStateChanged(auth, async (user) => {
@@ -28,6 +29,7 @@ onAuthStateChanged(auth, async (user) => {
   const userDoc = await getDoc(doc(db, "users", user.uid));
   const role    = userDoc.exists() ? userDoc.data().role : "user";
   localStorage.setItem("role", role);
+  currentWorkerUid = user.uid;
 
   // Role-based redirects
   if (role === "admin") { 
@@ -81,26 +83,44 @@ if (logoutBtn) {
   });
 }
 
+// ── Priority Badge Helper Function ───────────────────────────────────────────
+function getPriorityBadge(priority) {
+  if (!priority) return '<span class="badge badge-pending">Not set</span>';
+  
+  const priorityMap = {
+    low: { class: 'priority-low', label: 'Low' },
+    medium: { class: 'priority-medium', label: 'Medium' },
+    high: { class: 'priority-high', label: 'High' }
+  };
+  
+  const p = priorityMap[priority] || { class: 'badge-pending', label: priority };
+  return `<span class="badge ${p.class}">${p.label}</span>`;
+}
+
 async function loadAllRequests() {
   const table = document.getElementById("requestsTable");
-  table.innerHTML = "<tr><td colspan='10'>Loading...";
+  // Updated colspan from 10 to 12 (table now has 12 columns)
+  table.innerHTML = "<tr><td colspan='12'>Loading...";
+
   try {
     const token = await getFreshToken();
     const res   = await fetch("/api/requests", {
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
     });
     if (!res.ok) throw new Error();
-    allRequests = await res.json();
+    const allData = await res.json();
+    // Filter to show only requests assigned to this worker
+    allRequests = allData.filter(req => req.assignedTo === currentWorkerUid);
     renderTable(allRequests);
   } catch {
-    table.innerHTML = "<tr><td colspan='10'>Failed to load requests.";
+    table.innerHTML = "<tr><td colspan='12'>Failed to load requests.";
   }
 }
 
 function renderTable(data) {
   const table = document.getElementById("requestsTable");
   if (!data.length) { 
-    table.innerHTML = "<tr><td colspan='10'>No requests found."; 
+    table.innerHTML = "<tr><td colspan='12'>No requests assigned to you."; 
     return; 
   }
   
@@ -111,19 +131,23 @@ function renderTable(data) {
       : '<span class="no-image">No image</span>';
     
     let statusClass = req.status === "in-progress" ? "inprogress" : req.status;
+    const priorityBadge = getPriorityBadge(req.priority);
+    const assignedByName = req.assignedToName || 'Unknown';
     
     return `
-      <tr>
-        <td>${escapeHtml(req.id)}</td>
-        <td>${escapeHtml(req.userEmail ?? "-")}</td>
-        <td>${escapeHtml(req.category)}</td>
-        <td>${escapeHtml(req.description)}</td>
-        <td>${req.ward || '-'}</td>
-        <td>${req.municipality || '-'}</td>
-        <td>${escapeHtml(req.createdAt ?? "-")}</td>
-        <td><span class="badge badge-${statusClass}">${escapeHtml(req.status)}</span></td>
+      <table>
+        <td class="id-cell">${escapeHtml(req.id)}</td>
+        <td class="user-cell">${escapeHtml(req.userEmail ?? "-")}</td>
+        <td class="category-cell">${escapeHtml(req.category)}</td>
+        <td class="description-cell">${escapeHtml(req.description)}</td>
+        <td class="priority-cell">${priorityBadge}</td>
+        <td class="assigned-by-cell">${escapeHtml(assignedByName)}</td>
+        <td class="ward-cell">${req.ward || '-'}</td>
+        <td class="municipality-cell">${req.municipality || '-'}</td>
+        <td class="date-cell">${escapeHtml(req.createdAt ?? "-")}</td>
+        <td class="status-cell"><span class="badge badge-${statusClass}">${escapeHtml(req.status)}</span></td>
         <td class="proof-cell">${imageHtml}</td>
-        <td>
+        <td class="update-cell">
           <select class="status-select" data-id="${escapeHtml(req.firestoreId)}" onchange="updateStatus(this)">
             <option value="">Change...</option>
             <option value="pending"     ${req.status === "pending"     ? "selected" : ""}>Pending</option>
@@ -185,9 +209,9 @@ document.addEventListener("keydown", function(e) {
   }
 });
 
-// ── Helper: Escape HTML to prevent XSS ─────────────────────────────────────────
+// ── Helper: Escape HTML to prevent XSS (FIXED: handles 0 correctly) ───────────
 function escapeHtml(str) {
-  if (!str) return "";
+  if (str === null || str === undefined) return "";
   return String(str)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
