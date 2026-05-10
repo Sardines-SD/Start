@@ -132,22 +132,22 @@ async function sendStatusEmail(toEmail, report, newStatus) {
       <p style="color:#374151;font-size:15px">Your report has been updated. Here are the details:</p>
       <table style="width:100%;border-collapse:collapse;margin:20px 0">
         <tr style="background:#f9fafb">
-          <td style="padding:10px 14px;font-weight:bold;color:#6b7280;width:35%">Category</td>
-          <td style="padding:10px 14px;color:#111827">${report.category}</td>
-        </tr>
+          <td style="padding:10px 14px;font-weight:bold;color:#6b7280;width:35%">Category<\/td>
+          <td style="padding:10px 14px;color:#111827">${report.category}<\/td>
+        <\/tr>
         <tr>
-          <td style="padding:10px 14px;font-weight:bold;color:#6b7280">Description</td>
-          <td style="padding:10px 14px;color:#111827">${report.description}</td>
-        </tr>
+          <td style="padding:10px 14px;font-weight:bold;color:#6b7280">Description<\/td>
+          <td style="padding:10px 14px;color:#111827">${report.description}<\/td>
+        <\/tr>
         <tr style="background:#f9fafb">
-          <td style="padding:10px 14px;font-weight:bold;color:#6b7280">New Status</td>
+          <td style="padding:10px 14px;font-weight:bold;color:#6b7280">New Status<\/td>
           <td style="padding:10px 14px">
             <span style="background:${colour};color:#fff;padding:4px 12px;border-radius:999px;font-size:13px;font-weight:600">
               ${label}
             </span>
-          </td>
-        </tr>
-      </table>
+          <\/td>
+        <\/tr>
+      <\/table>
       <p style="color:#6b7280;font-size:13px;margin-top:32px">
         You are receiving this email because you submitted a report on FixMyCity.<br>
         Please do not reply to this email.
@@ -162,6 +162,62 @@ async function sendStatusEmail(toEmail, report, newStatus) {
     from:    process.env.EMAIL_FROM || process.env.EMAIL_USER,
     to:      toEmail,
     subject: `Your report status has been updated to: ${label}`,
+    html,
+  });
+}
+
+// ── ASSIGNMENT EMAIL SENDER (US3) ────────────────────────────────────────────
+async function sendAssignmentEmail(toEmail, workerName, request, priority, assignedByName) {
+  const priorityLabels = {
+    low: "🟢 Low",
+    medium: "🟡 Medium",
+    high: "🔴 High"
+  };
+  
+  const priorityText = priorityLabels[priority] || "Not set";
+  const priorityColor = priority === "high" ? "#dc3545" : (priority === "medium" ? "#ffc107" : "#28a745");
+  
+  const html = `
+  <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
+    <div style="background:linear-gradient(135deg, #2b5fa8, #1a3f7a);padding:24px 32px;text-align:center">
+      <h1 style="color:#fff;margin:0;font-size:22px">New Request Assigned to You</h1>
+    </div>
+    <div style="padding:32px">
+      <p style="color:#374151;font-size:15px">Hello ${workerName},</p>
+      <p style="color:#374151;font-size:15px">A new service request has been assigned to you by ${assignedByName}.</p>
+      
+      <table style="width:100%;border-collapse:collapse;margin:20px 0">
+        <tr style="background:#f9fafb">
+          <td style="padding:10px 14px;font-weight:bold;color:#6b7280;width:35%">Category<\/td>
+          <td style="padding:10px 14px;color:#111827">${request.category}<\/td>
+         <\/tr>
+        <tr>
+          <td style="padding:10px 14px;font-weight:bold;color:#6b7280">Description<\/td>
+          <td style="padding:10px 14px;color:#111827">${request.description}<\/td>
+         <\/tr>
+        <tr style="background:#f9fafb">
+          <td style="padding:10px 14px;font-weight:bold;color:#6b7280">Priority<\/td>
+          <td style="padding:10px 14px">
+            <span style="background:${priorityColor};color:#fff;padding:4px 12px;border-radius:999px;font-size:13px;font-weight:600">
+              ${priorityText}
+            </span>
+          <\/td>
+         <\/tr>
+       <\/table>
+      
+      <p style="color:#6b7280;font-size:13px;margin-top:32px">
+        Please log in to the Worker Dashboard to view and update this request.
+      </p>
+    </div>
+    <div style="background:#f3f4f6;padding:16px 32px;text-align:center">
+      <p style="color:#9ca3af;font-size:12px;margin:0">Municipal Service Delivery Portal</p>
+    </div>
+  </div>`;
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+    to: toEmail,
+    subject: `New Request Assigned: ${request.category} (${priorityText})`,
     html,
   });
 }
@@ -189,6 +245,121 @@ app.post("/api/send-verification-email", async (req, res) => {
   } catch (error) {
     console.error("Email sending error:", error);
     res.status(500).json({ error: "Failed to send email" });
+  }
+});
+
+// ── GET ALL WORKERS (admin only) ────────────────────────────────────────────
+app.get("/api/workers", requireAuth, async (req, res) => {
+  try {
+    const role = await getRole(req.user.uid);
+    if (role !== "admin") {
+      return res.status(403).json({ error: "Forbidden – admins only" });
+    }
+    
+    const snapshot = await db.collection("users")
+      .where("role", "==", "worker")
+      .get();
+    
+    const workers = snapshot.docs.map(doc => ({
+      uid: doc.id,
+      email: doc.data().email,
+      username: doc.data().username || doc.data().email.split('@')[0],
+      ward: doc.data().ward || ""
+    }));
+    
+    res.json(workers);
+  } catch (err) {
+    console.error("Error loading workers:", err);
+    res.status(500).json({ error: "Failed to load workers" });
+  }
+});
+
+// ── ASSIGN REQUEST TO WORKER (admin only) ────────────────────────────────────
+app.patch("/api/requests/:id/assign", requireAuth, async (req, res) => {
+  const { id } = req.params;
+  const { workerUid, priority } = req.body;
+  
+  if (!workerUid) {
+    return res.status(400).json({ error: "Worker UID is required" });
+  }
+  
+  try {
+    const role = await getRole(req.user.uid);
+    if (role !== "admin") {
+      return res.status(403).json({ error: "Forbidden – admins only" });
+    }
+    
+    // Get worker details
+    const workerDoc = await db.collection("users").doc(workerUid).get();
+    if (!workerDoc.exists) {
+      return res.status(404).json({ error: "Worker not found" });
+    }
+    
+    const workerData = workerDoc.data();
+    const workerEmail = workerData.email;
+    const workerName = workerData.username || workerData.email.split('@')[0];
+    
+    // Get admin name for email
+    const adminDoc = await db.collection("users").doc(req.user.uid).get();
+    const adminName = adminDoc.exists ? (adminDoc.data().username || req.user.email.split('@')[0]) : "Admin";
+    
+    // Update the request
+    const requestRef = db.collection("requests").doc(id);
+    const requestDoc = await requestRef.get();
+    
+    if (!requestDoc.exists) {
+      return res.status(404).json({ error: "Request not found" });
+    }
+    
+    const updateData = {
+      assignedTo: workerUid,
+      assignedToEmail: workerEmail,
+      assignedToName: workerName,
+      assignedAt: admin.firestore.FieldValue.serverTimestamp(),
+      priority: priority || "medium"
+    };
+    
+    await requestRef.update(updateData);
+    
+    // Send email to worker
+    const requestData = requestDoc.data();
+    await sendAssignmentEmail(workerEmail, workerName, requestData, priority || "medium", adminName);
+    
+    res.json({ message: "Request assigned successfully" });
+  } catch (err) {
+    console.error("Error assigning request:", err);
+    res.status(500).json({ error: "Failed to assign request: " + err.message });
+  }
+});
+
+// ── UPDATE REQUEST PRIORITY (admin only) ─────────────────────────────────────
+app.patch("/api/requests/:id/priority", requireAuth, async (req, res) => {
+  const { id } = req.params;
+  const { priority } = req.body;
+  const validPriorities = ["low", "medium", "high"];
+  
+  if (!validPriorities.includes(priority)) {
+    return res.status(400).json({ error: "Invalid priority value. Use low, medium, or high" });
+  }
+  
+  try {
+    const role = await getRole(req.user.uid);
+    if (role !== "admin") {
+      return res.status(403).json({ error: "Forbidden – admins only" });
+    }
+    
+    const requestRef = db.collection("requests").doc(id);
+    const requestDoc = await requestRef.get();
+    
+    if (!requestDoc.exists) {
+      return res.status(404).json({ error: "Request not found" });
+    }
+    
+    await requestRef.update({ priority });
+    res.json({ message: "Priority updated successfully" });
+  } catch (err) {
+    console.error("Error updating priority:", err);
+    res.status(500).json({ error: "Failed to update priority" });
   }
 });
 
@@ -241,7 +412,6 @@ app.post("/api/requests", requireAuth, async (req, res) => {
       requestData.municipality = wardInfo.municipality;
       requestData.province     = wardInfo.province;
       const address = await reverseGeocode(latitude, longitude);
-
       requestData.address = address;
     }
 
@@ -356,17 +526,17 @@ app.patch("/api/requests/:id", requireAuth, async (req, res) => {
     }
 
     const docRef  = db.collection("requests").doc(id);
-const docSnap = await docRef.get();
+    const docSnap = await docRef.get();
 
-if (!docSnap.exists) {
-  return res.status(404).json({ error: "Report not found" });
-}
+    if (!docSnap.exists) {
+      return res.status(404).json({ error: "Report not found" });
+    }
 
-if (docSnap.data().status === "resolved") {
-  return res.status(400).json({ error: "This request is resolved and cannot be changed." });
-}
+    if (docSnap.data().status === "resolved") {
+      return res.status(400).json({ error: "This request is resolved and cannot be changed." });
+    }
 
-await docRef.update({ status });
+    await docRef.update({ status });
 
     // ── Send email notification to the reporter ──────────────────────────────
     const report = docSnap.data();
@@ -507,14 +677,11 @@ app.delete("/api/me", requireAuth, async (req, res) => {
   }
 });
 
-
-
 // ── SUBMIT SATISFACTION FEEDBACK (resident only) ──────────────────────────────
 app.post("/api/requests/:id/feedback", requireAuth, async (req, res) => {
   const { id } = req.params;
   const { rating, comment } = req.body;
 
-  // Validate rating range
   if (!rating || !Number.isInteger(Number(rating)) || Number(rating) < 1 || Number(rating) > 5) {
     return res.status(400).json({ error: "Rating must be an integer between 1 and 5" });
   }
@@ -529,17 +696,14 @@ app.post("/api/requests/:id/feedback", requireAuth, async (req, res) => {
 
     const data = docSnap.data();
 
-    // Only the original submitter may leave feedback
     if (data.userId !== req.user.uid) {
       return res.status(403).json({ error: "Forbidden – only the original requester can leave feedback" });
     }
 
-    // Request must be resolved
     if (data.status !== "resolved") {
       return res.status(400).json({ error: "Feedback can only be submitted for resolved requests" });
     }
 
-    // Prevent double submission
     if (data.feedbackSubmitted === true) {
       return res.status(400).json({ error: "Feedback has already been submitted for this request" });
     }
@@ -557,8 +721,6 @@ app.post("/api/requests/:id/feedback", requireAuth, async (req, res) => {
     res.status(500).json({ error: "Failed to save feedback" });
   }
 });
-
-
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
