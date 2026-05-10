@@ -312,6 +312,21 @@
       font-size: 13px;
       margin: 0;
     }
+    .btn-claim {
+      background: #16a34a;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-claim:hover  { background: #15803d; }
+    .btn-claim:disabled { background: #9ca3af; cursor: not-allowed; }
+    #pendingAcceptanceSection { border: 2px solid #f59e0b; border-radius: 10px; padding: 16px; margin-bottom: 24px; background: #fffbeb; }
+    #pendingAcceptanceSection h2 { color: #b45309; }
   </style>
 </head>
 <body>
@@ -335,6 +350,35 @@
 </header>
 
 <main>
+  <!-- ── Pending Acceptance Section (shown only when admin has assigned new requests) -->
+  <section id="pendingAcceptanceSection" style="display:none;">
+    <h2>⏳ Requests Awaiting Your Acceptance</h2>
+    <p class="section-subtitle">The admin has assigned these requests to you. Accept them to start working.</p>
+    <article>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Submitted By</th>
+              <th>Category</th>
+              <th>Description</th>
+              <th>Priority</th>
+              <th>Assigned By</th>
+              <th>Ward</th>
+              <th>Municipality</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Proof</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="pendingAcceptanceTable"></tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+
   <section>
     <h2>Assigned Service Requests</h2>
     <p class="section-subtitle">View all submitted requests and update their status as you action them.</p>
