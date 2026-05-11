@@ -231,7 +231,7 @@ function canAssignToWorker(role) {
 }
 
 function canClaimRequest(role) {
-  return role === 'worker' || role === 'admin';
+  return role === 'worker';
 }
 
 // ── Sprint 3: Feedback logic ──────────────────────────────────────────────────
