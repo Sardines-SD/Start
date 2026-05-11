@@ -492,16 +492,25 @@
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      if (!user.emailVerified) {
-        await auth.signOut();
-        showError("Please verify your email before logging in.");
-        return;
-      }
+   const userDoc = await getDoc(doc(db, "users", user.uid));
+
+if (!userDoc.exists()) {
+  await auth.signOut();
+  showError("User account not found.");
+  return;
+}
+
+const userData = userDoc.data();
+
+if (userData?.isEmailVerified === false) {
+  await auth.signOut();
+  showError("Please verify your email before logging in.");
+  return;
+}
 
       showSuccess("Login successful! Redirecting...");
 
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      const role = userDoc.exists() ? userDoc.data().role : "user";
+      const role = userData.role || "user";
 
       setTimeout(() => {
         if (role === "admin") {
