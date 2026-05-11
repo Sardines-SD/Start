@@ -2,214 +2,199 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Login - Municipal Service Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Municipal Service Portal - Login</title>
   <link rel="stylesheet" href="styler.css">
   <style>
-    
-
-    /* Override styler.css header for this page */
-    header {
-      background: transparent;
-      box-shadow: none;
-      padding: 40px 20px 16px;
+    /* Login Page Specific Styles */
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 12px;
+      background-image: url('Joburg.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
     }
 
-    .header-brand {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
+    /* Dark overlay for readability */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 0;
+      pointer-events: none;
     }
 
-    .header-brand h1 {
-      margin: 0;
-      font-size: 26px;
-      font-weight: 700;
-      color: #ffffff;
-      text-shadow: 0 1px 4px rgba(0,0,0,0.3);
-      text-align: left;
-      line-height: 1.3;
-    }
-
-    .welcome-block {
+    /* Header with full portal name */
+    .site-header {
       text-align: center;
-      margin-top: 6px;
+      padding: 30px 20px 10px;
+      position: relative;
+      z-index: 1;
     }
 
-    .welcome-block h2 {
-      color: #ffffff;
+    .site-header .logo svg {
+      width: 70px;
+      height: 70px;
+    }
+
+    .site-header h1 {
       font-size: 28px;
+      color: white;
+      margin: 10px 0 5px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
       font-weight: 700;
-      margin: 0 0 6px;
-      text-shadow: 0 1px 4px rgba(0,0,0,0.3);
     }
 
-    .welcome-block p {
+    .site-header .welcome {
+      font-size: 24px;
+      color: white;
+      font-weight: 700;
+      margin: 10px 0 5px;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .site-header .subtitle {
       color: #ddeeff;
       font-size: 15px;
       margin: 0;
       text-shadow: 0 1px 3px rgba(0,0,0,0.2);
     }
 
-    /* Override styler.css main for this page */
-    main {
+    .container {
       flex: 1;
       display: flex;
-      align-items: center;
       justify-content: center;
-      padding: 20px;
-      margin: 0 auto;
-      max-width: 100%;
+      align-items: center;
+      padding: 20px 20px 40px;
+      gap: 40px;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 1;
     }
 
-    /* Override styler.css section for login card */
-    section {
-      background: rgba(225, 235, 250, 0.93);
-      border-radius: 12px;
-      padding: 36px 44px 30px;
+    /* Login Card - WIDER */
+    .login-card {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 16px;
+      padding: 35px;
       width: 100%;
-      max-width: 420px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-      transform: none;
-      margin-bottom: 0;
-    }
-
-    section:hover {
-      transform: none;
-    }
-
-    section h2 {
+      max-width: 450px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
       text-align: center;
-      font-size: 22px;
-      font-weight: 700;
-      color: #1a2a3a;
-      margin: 0 0 22px;
     }
 
-    /* Input rows with icon */
-    .input-row {
-      display: flex;
-      align-items: center;
-      background-color: #f5f8fc;
-      border: 1px solid #c8d4e0;
-      border-radius: 8px;
-      margin-top: 10px;
-      overflow: hidden;
+    .login-card h2 {
+      color: #2b5fa8;
+      margin: 0 0 5px;
+      font-size: 24px;
     }
 
-    .input-icon {
-      padding: 0 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background-color: #eaeff8;
-      border-right: 1px solid #c8d4e0;
-      height: 48px;
-      min-width: 48px;
+    .login-subtitle {
+      color: #6b7280;
+      font-size: 13px;
+      margin-bottom: 25px;
     }
 
-    .input-row input {
-      border: none;
-      background: transparent;
-      padding: 12px 14px;
-      font-size: 14px;
-      color: #1a2a3a;
-      outline: none;
-      width: 100%;
-      margin: 0;
-      box-shadow: none;
+    .input-group {
+      margin-bottom: 15px;
+      text-align: left;
     }
 
-    .input-row input:focus {
-      border: none;
-      box-shadow: none;
-    }
-
-    .input-row input::placeholder {
-      color: #7a94a8;
-    }
-
-    /* Override form flex for this page */
-    form {
+    .input-group label {
       display: block;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 5px;
+      font-size: 13px;
     }
 
-    /* Login button styling */
-    button[type="submit"] {
+    .input-group input {
       width: 100%;
-      margin-top: 20px;
-      padding: 14px;
-      background: linear-gradient(135deg, #2b5fa8, #1a3f7a);
-      color: #ffffff;
+      padding: 12px 15px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: all 0.3s;
+      box-sizing: border-box;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: #2b5fa8;
+      box-shadow: 0 0 0 3px rgba(43, 95, 168, 0.1);
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #2b5fa8, #1e4a7a);
+      color: white;
       border: none;
       border-radius: 8px;
       font-size: 16px;
       font-weight: 700;
       cursor: pointer;
-      transition: background 0.2s, transform 0.2s;
+      transition: all 0.3s;
+      margin: 15px 0;
     }
 
-    button[type="submit"]:hover {
-      background: linear-gradient(135deg, #1e4a8a, #12306b);
-      transform: translateY(-1px);
+    .login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(43, 95, 168, 0.3);
     }
 
-    /* Divider styling */
     .divider {
       display: flex;
       align-items: center;
-      margin: 24px 0 20px;
-      gap: 12px;
+      text-align: center;
+      margin: 15px 0;
+      color: #9ca3af;
+      font-size: 13px;
     }
 
-    .divider hr {
+    .divider::before,
+    .divider::after {
+      content: '';
       flex: 1;
-      border: none;
-      border-top: 1px solid #c8d4e0;
+      border-bottom: 1px solid #e5e7eb;
     }
 
     .divider span {
-      color: #7a94a8;
-      font-size: 13px;
-      font-weight: 500;
+      margin: 0 10px;
     }
 
-    /* Google button styling - consistent with your design */
     .google-btn {
       width: 100%;
       padding: 12px;
-      background: #ffffff;
-      color: #1a2a3a;
-      border: 1px solid #c8d4e0;
+      background: white;
+      color: #374151;
+      border: 1px solid #d1d5db;
       border-radius: 8px;
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
+      transition: all 0.3s;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 12px;
-      transition: all 0.2s ease;
-      margin-bottom: 8px;
+      gap: 10px;
     }
 
     .google-btn:hover {
-      background: #f8fafc;
+      background: #f9fafb;
       border-color: #2b5fa8;
-      transform: translateY(-1px);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
-
-    .google-btn svg {
-      flex-shrink: 0;
     }
 
     .card-links {
-      text-align: center;
       margin-top: 20px;
       display: flex;
       flex-direction: column;
@@ -218,7 +203,7 @@
 
     .card-links a {
       color: #2b5fa8;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       text-decoration: none;
     }
@@ -230,148 +215,352 @@
     .verify-link {
       color: #6a84a0;
       font-size: 12px;
-      font-weight: 500;
-      margin-top: 4px;
     }
 
-    .verify-link:hover {
-      color: #2b5fa8;
-    }
-
-    output#loginFeedback {
-      display: block;
-      margin-top: 14px;
+    /* SUCCESS MESSAGE */
+    .success-message {
+      background: #dcfce7;
+      color: #166534;
       padding: 10px;
-      background: #e9f2ff;
-      border-left: 4px solid #007bff;
-      border-radius: 6px;
-      font-size: 14px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      font-size: 13px;
+      display: none;
     }
 
-    /* Override styler.css footer */
+    /* ERROR MESSAGE */
+    .error-message {
+      background: #fee2e2;
+      color: #dc2626;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      font-size: 13px;
+      display: none;
+    }
+
+    /* Live Reports Card - NARROWER/SMALLER */
+    .live-reports {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 16px;
+      padding: 30px;
+      width: 100%;
+      max-width: 350px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .live-reports h3 {
+      color: #2b5fa8;
+      margin-bottom: 15px;
+      font-size: 22px;
+    }
+
+    .live-reports p {
+      color: #6b7280;
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    .live-reports-btn {
+      display: inline-block;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #28a745, #1e7a34);
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .live-reports-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+    }
+
     footer {
       background: transparent;
-      box-shadow: none;
       padding: 20px;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    footer p {
+      color: #ffffff;
+      font-size: 12px;
+      margin: 0;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
     }
 
     .footer-links {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 0;
+      margin-top: 10px;
     }
 
     .footer-links a {
-      color: #d8e6f5;
-      font-size: 14px;
+      color: #ffffff;
       text-decoration: none;
-      padding: 0 12px;
-      transition: color 0.2s;
+      font-size: 12px;
+      margin: 0 10px;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
     }
 
     .footer-links a:hover {
-      color: #ffffff;
+      text-decoration: underline;
     }
 
-    .footer-sep {
-      color: #a8bdd0;
-      font-size: 14px;
+    @media (max-width: 900px) {
+      .container {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .login-card,
+      .live-reports {
+        max-width: 400px;
+      }
     }
   </style>
 </head>
 <body>
 
-<header>
-  <div class="header-brand">
-    <svg width="58" height="58" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
+<!-- HEADER WITH FULL PORTAL NAME -->
+<div class="site-header">
+  <div class="logo">
+    <svg width="70" height="70" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
       <path d="M36 4 L64 16 L64 38 C64 54 50 65 36 70 C22 65 8 54 8 38 L8 16 Z" fill="#2b5fa8" stroke="#a8c4e8" stroke-width="1.5"/>
       <path d="M36 10 L58 20 L58 38 C58 51 46 61 36 66 C26 61 14 51 14 38 L14 20 Z" fill="#1e4a8a"/>
       <rect x="24" y="28" width="24" height="16" rx="3" fill="none" stroke="#ffffff" stroke-width="2"/>
       <rect x="30" y="22" width="12" height="10" rx="3" fill="none" stroke="#ffffff" stroke-width="2"/>
       <circle cx="36" cy="36" r="2.5" fill="#ffffff"/>
     </svg>
-    <h1>Municipal Service Delivery<br>Reporting Portal</h1>
   </div>
 
-  <div class="welcome-block">
-    <h2>Welcome Back!</h2>
-    <p>Log in to report and track municipal issues in your community.</p>
+  <h1>Municipal Service Delivery Reporting Portal</h1>
+
+  <div class="welcome">Welcome Back!</div>
+
+  <div class="subtitle">
+    Log in to report and track municipal issues in your community.
   </div>
-</header>
+</div>
 
-<main>
-  <section>
-    <div style="text-align:center; margin-top:20px;">
-      <a href="PublicDashboard.html" class="public-dashboard-btn">
-      See Community Reports Live
-      </a>
-    </div>
-<form id="loginForm">
-  <div class="input-row">
-    <div class="input-icon">✉️</div>
-    <input type="email" id="loginEmail" placeholder="Email:" required>
-  </div>
+<!-- TWO CARDS SIDE BY SIDE -->
+<div class="container">
 
-  <div class="input-row">
-    <div class="input-icon">🔒</div>
-    <input type="password" id="loginPassword" placeholder="Password:" required>
-  </div>
+  <!-- LOGIN CARD -->
+  <div class="login-card">
+    <h2>Login</h2>
+    <div class="login-subtitle">Access your account</div>
 
-  <button type="submit" class="public-dashboard-btn">
-    Login
-  </button>
-</form>
+    <form id="loginForm">
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" id="email" placeholder="Email" required>
+      </div>
 
-    <!-- Divider -->
+      <div class="input-group">
+        <label>Password</label>
+        <input type="password" id="password" placeholder="Password" required>
+      </div>
+
+      <button type="submit" class="login-btn">Login</button>
+    </form>
+
+    <!-- SUCCESS/ERROR MESSAGES - NOW BELOW THE LOGIN BUTTON (after </form>) -->
+    <div id="successMessage" class="success-message"></div>
+    <div id="errorMessage" class="error-message"></div>
+
     <div class="divider">
-      <hr>
       <span>OR</span>
-      <hr>
     </div>
 
-    <!-- Google Sign-In Button -->
-    <button type="button" id="googleSignInBtn" class="google-btn">
+    <button id="googleSignIn" class="google-btn">
       <svg width="20" height="20" viewBox="0 0 24 24">
-        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
       </svg>
+
       Continue with Google
     </button>
 
     <div class="card-links">
       <a href="ForgotPassword.html">Forgot password?</a>
       <a href="Register.html">Don't have an account? Register here</a>
-      <a href="verify-otp.html" class="verify-link">Need to verify your email?</a>
+      <a href="verify-otp.html" class="verify-link">
+        Need to verify your email?
+      </a>
     </div>
+  </div>
 
-    <output id="loginFeedback"></output>
-  </section>
-</main>
+  <!-- LIVE REPORTS CARD -->
+  <div class="live-reports">
+    <h3>📊 See Community Reports Live</h3>
+
+    <p>
+      View real-time service requests from your community.
+      Track issues like potholes, water leaks, electricity outages,
+      and waste management.
+    </p>
+
+    <a href="PublicDashboard.html" class="live-reports-btn">
+      Browse Public Reports →
+    </a>
+  </div>
+
+</div>
 
 <footer>
+  <p>&copy; 2026 Municipal Service Delivery Portal</p>
+
   <div class="footer-links">
-    <a href="aboutUs.html">About Us</a>
-    <span class="footer-sep">|</span>
-    <a href="contactUs.html">Contact Us</a>
-    <span class="footer-sep">|</span>
-    <a href="privacyPolicy.html">Privacy Policy</a>
-    <span class="footer-sep">|</span>
+    <a href="aboutUs.html">About Us</a> |
+    <a href="contactUs.html">Contact Us</a> |
+    <a href="privacyPolicy.html">Privacy Policy</a> |
     <a href="termsOfService.html">Terms of Service</a>
   </div>
 </footer>
 
-<script type="module" src="login.js"></script>
-
 <script type="module">
-  import { signInWithGoogle } from './login.js';
-  const googleBtn = document.getElementById('googleSignInBtn');
-  if (googleBtn) {
-    googleBtn.addEventListener('click', signInWithGoogle);
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+
+  import {
+    getAuth,
+    signInWithEmailAndPassword,
+    GoogleAuthProvider,
+    signInWithPopup,
+    setPersistence,
+    browserLocalPersistence
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+  import {
+    getFirestore,
+    doc,
+    getDoc
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  import { firebaseConfig } from "./firebaseConfig.js";
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const loginForm = document.getElementById("loginForm");
+  const emailInput = document.getElementById("email");
+  const passwordInput = document.getElementById("password");
+
+  const errorDiv = document.getElementById("errorMessage");
+  const successDiv = document.getElementById("successMessage");
+
+  function showError(message) {
+    successDiv.style.display = "none";
+    errorDiv.textContent = message;
+    errorDiv.style.display = "block";
   }
+
+  function showSuccess(message) {
+    errorDiv.style.display = "none";
+    successDiv.textContent = message;
+    successDiv.style.display = "block";
+  }
+
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    errorDiv.style.display = "none";
+    successDiv.style.display = "none";
+
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+
+    if (!email || !password) {
+      showError("Please enter both email and password");
+      return;
+    }
+
+    try {
+      await setPersistence(auth, browserLocalPersistence);
+
+      showSuccess("Signing in...");
+
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      if (!user.emailVerified) {
+        await auth.signOut();
+        showError("Please verify your email before logging in.");
+        return;
+      }
+
+      showSuccess("Login successful! Redirecting...");
+
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      const role = userDoc.exists() ? userDoc.data().role : "user";
+
+      setTimeout(() => {
+        if (role === "admin") {
+          window.location.href = "AdminDashboard.html";
+        } else if (role === "worker") {
+          window.location.href = "WorkerDashboard.html";
+        } else {
+          window.location.href = "Dashboard.html";
+        }
+      }, 1200);
+
+    } catch (error) {
+      console.error("Login error:", error);
+      showError("Invalid email or password");
+    }
+  });
+
+  const googleBtn = document.getElementById("googleSignIn");
+
+  googleBtn.addEventListener("click", async () => {
+    errorDiv.style.display = "none";
+    successDiv.style.display = "none";
+
+    const provider = new GoogleAuthProvider();
+
+    try {
+      showSuccess("Connecting to Google...");
+
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      showSuccess("Google sign in successful! Redirecting...");
+
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+
+      if (!userDoc.exists()) {
+        setTimeout(() => {
+          window.location.href = `Register.html?email=${encodeURIComponent(user.email)}&googleId=${user.uid}`;
+        }, 1200);
+        return;
+      }
+
+      const role = userDoc.data().role || "user";
+
+      setTimeout(() => {
+        if (role === "admin") {
+          window.location.href = "AdminDashboard.html";
+        } else if (role === "worker") {
+          window.location.href = "WorkerDashboard.html";
+        } else {
+          window.location.href = "Dashboard.html";
+        }
+      }, 1200);
+
+    } catch (error) {
+      console.error("Google sign in error:", error);
+      showError("Google sign in failed. Please try again.");
+    }
+  });
 </script>
 
 </body>
