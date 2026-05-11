@@ -47,7 +47,7 @@ if (loginForm) {
       const userData = userDoc.data();
 
       // 🔐 CHECK CUSTOM EMAIL VERIFICATION FIELD
-      if (!userData || !userData.isEmailVerified) {
+      if (userData?.isEmailVerified === false) {
         // Store pending info in localStorage for verification page
         localStorage.setItem("pendingUserId", user.uid);
         localStorage.setItem("pendingUserEmail", email);
