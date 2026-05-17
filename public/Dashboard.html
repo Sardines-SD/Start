@@ -20,6 +20,40 @@
   <style>
 
 
+/* Cards / sections that stay white */
+body.dark-mode .issue-card,
+body.dark-mode .report-card,
+body.dark-mode .modal-content,
+body.dark-mode .feedback-section {
+  background: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+/* The light-blue table rows / issue list bg */
+body.dark-mode .issue-list-container,
+body.dark-mode .issue-row {
+  background: var(--section-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Feedback/thankyou text hardcoded to #374151 */
+body.dark-mode #feedbackThankyouSection p { color: var(--text-secondary) !important; }
+
+/* Rows with hardcoded #f5f8fc background */
+body.dark-mode tr, body.dark-mode td {
+  background-color: transparent;
+  color: var(--td-color);
+}
+
+/* Badges inside dashboard */
+body.dark-mode .badge-pending    { background: #3d2e00; color: #fcd34d; }
+body.dark-mode .badge-progress   { background: #0c2340; color: #93c5fd; }
+body.dark-mode .badge-resolved   { background: #0a2e1a; color: #6ee7b7; }
+
+/* Star rating label hardcoded color */
+body.dark-mode #starLabel { color: var(--text-primary) !important; }
+
+
 @keyframes starPop {
   0%   { transform: scale(1); }
   40%  { transform: scale(1.35); }
@@ -657,6 +691,34 @@
       white-space: nowrap;
     }
     .btn-locate:hover { background: #1e4a8a; }
+
+/* ── DARK MODE OVERRIDES ── */
+body.dark-mode section,
+body.dark-mode .feedback-modal {
+  background: rgba(22, 30, 48, 0.97);
+  color: var(--text-primary);
+}
+body.dark-mode section h2,
+body.dark-mode section h3,
+body.dark-mode section p,
+body.dark-mode .map-hint { color: var(--text-secondary); }
+body.dark-mode label { color: var(--text-secondary); }
+body.dark-mode input, body.dark-mode textarea, body.dark-mode select {
+  background-color: #0f172a;
+  border-color: #334155;
+  color: var(--text-primary);
+}
+body.dark-mode .search-box input { background: #0f172a; color: var(--text-primary); border-color: #334155; }
+body.dark-mode .no-requests { color: var(--text-muted); }
+body.dark-mode .location-tag { background: #1e3a5f; color: #93c5fd; }
+body.dark-mode output, body.dark-mode .feedback-subtitle { background: #1e3a5f; color: var(--text-primary); }
+body.dark-mode .badge-pending  { background: #3d2e00; color: #fcd34d; }
+body.dark-mode .badge-progress { background: #0c2340; color: #93c5fd; }
+body.dark-mode .badge-resolved { background: #0a2e1a; color: #6ee7b7; }
+body.dark-mode .feedback-modal-overlay { background: rgba(0,0,0,0.75); }
+body.dark-mode .star-row button { color: #94a3b8; }
+body.dark-mode .feedback-thankyou p { color: var(--text-secondary); }
+
   </style>
 </head>
 <body>

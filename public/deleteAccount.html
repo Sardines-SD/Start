@@ -194,6 +194,21 @@
       font-size: 13px;
       margin: 0;
     }
+
+/* ── DARK MODE OVERRIDES ── */
+body.dark-mode section { background: rgba(22, 30, 48, 0.97); color: var(--text-primary); }
+body.dark-mode section h2 { color: #fca5a5; }
+body.dark-mode label { color: var(--text-secondary); }
+body.dark-mode input, body.dark-mode select, body.dark-mode textarea {
+  background-color: #0f172a; border-color: #334155; color: var(--text-primary);
+}
+body.dark-mode .warning-box {
+  background: #2d0a0e !important; color: #fca5a5 !important; border-color: #7f1d1d !important;
+}
+body.dark-mode output, body.dark-mode #deleteFeedback {
+  background: #1e3a5f; color: var(--text-primary);
+}
+body.dark-mode .header-sub { color: #94a3b8; }
   </style>
 </head>
 <body>

@@ -16,6 +16,25 @@
   html.dark-mode-pending body { background-color: #0f172a; }
 </style>
   <style>
+
+body.dark-mode tbody tr { background-color: var(--section-bg) !important; }
+body.dark-mode td { color: var(--td-color); }
+
+/* Pending acceptance section — bright yellow highlight */
+body.dark-mode #pendingAcceptanceSection {
+  background: #2a1f00 !important;
+  border-color: #92400e !important;
+}
+body.dark-mode #pendingAcceptanceSection h2 { color: #fcd34d !important; }
+
+/* Status label boxes */
+body.dark-mode .status-pending   { background: #3d2e00; color: #fcd34d; }
+body.dark-mode .status-accepted  { background: #0a2e1a; color: #6ee7b7; }
+body.dark-mode .status-rejected  { background: #2d0a0e; color: #fca5a5; }
+
+body.dark-mode .badge-pending    { background: #3d2e00; color: #fcd34d; }
+body.dark-mode .badge-inprogress { background: #0c2340; color: #93c5fd; }
+body.dark-mode .badge-resolved   { background: #0a2e1a; color: #6ee7b7; }
     /* Match User/Admin Dashboard styling */
  
 
@@ -324,6 +343,24 @@
     .btn-claim:disabled { background: #9ca3af; cursor: not-allowed; }
     #pendingAcceptanceSection { border: 2px solid #f59e0b; border-radius: 10px; padding: 16px; margin-bottom: 24px; background: #fffbeb; }
     #pendingAcceptanceSection h2 { color: #b45309; }
+
+/* ── DARK MODE OVERRIDES ── */
+body.dark-mode section { background: rgba(22, 30, 48, 0.97); color: var(--text-primary); }
+body.dark-mode section h2, body.dark-mode .section-subtitle { color: var(--text-secondary); }
+body.dark-mode label { color: var(--text-secondary); }
+body.dark-mode input, body.dark-mode select {
+  background-color: #0f172a; border-color: #334155; color: var(--text-primary);
+}
+body.dark-mode .filter-bar { background: rgba(22, 30, 48, 0.97); border-color: #334155; }
+body.dark-mode .role-tag { background: #1e3a5f; color: #93c5fd; }
+body.dark-mode .badge-pending    { background: #3d2e00; color: #fcd34d; }
+body.dark-mode .badge-inprogress { background: #0c2340; color: #93c5fd; }
+body.dark-mode .badge-resolved   { background: #0a2e1a; color: #6ee7b7; }
+body.dark-mode #pendingAcceptanceSection {
+  background: #2a1f00 !important; border-color: #92400e !important;
+}
+body.dark-mode #pendingAcceptanceSection h2 { color: #fcd34d !important; }
+
   </style>
 </head>
 <body>
