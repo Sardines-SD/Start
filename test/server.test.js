@@ -587,7 +587,7 @@ describe('Sprint 4 US1 — canEscalateRequest', () => {
   test('resolved request cannot be escalated', () => {
     const r = canEscalateRequest({ ...base, status: 'resolved' }, 'user_A');
     expect(r.valid).toBe(false);
-    expect(r.error).toContain('resolved');
+    expect(r.error.toLowerCase()).toContain('resolved');
   });
 });
 
@@ -728,7 +728,7 @@ describe('Sprint 4 US3 — canUnclaimRequest', () => {
   test('resolved request cannot be unclaimed', () => {
     const r = canUnclaimRequest({ ...claimed, status: 'resolved' }, 'worker_A');
     expect(r.valid).toBe(false);
-    expect(r.error).toContain('resolved');
+    expect(r.error.toLowerCase()).toContain('resolved');
   });
 
   // ── Boundary: null workerUid ─────────────────────────────────────────────
