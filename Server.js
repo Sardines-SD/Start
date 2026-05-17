@@ -63,6 +63,22 @@ function getWardInfo(lat, lng) {
   return { ward: null, wardNo: null, municipality: null, province: null };
 }
 
+// ── HELPER: Calculate distance between two coordinates in meters (Haversine formula) ──
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371e3; // Earth's radius in meters
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+  return R * c; // Distance in meters
+}
+
 // ── EMAIL TRANSPORTER ─────────────────────────────────────────────────────────
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -245,6 +261,87 @@ app.post("/api/send-verification-email", async (req, res) => {
   } catch (error) {
     console.error("Email sending error:", error);
     res.status(500).json({ error: "Failed to send email" });
+  }
+});
+
+// ── US3: DUPLICATE REQUEST DETECTION ───────────────────────────────────────────
+// Checks for similar unresolved requests near the user's location before submission
+app.post("/api/requests/check-duplicate", requireAuth, async (req, res) => {
+  const { latitude, longitude, category } = req.body;
+  
+  // Validate required fields
+  if (latitude === undefined || longitude === undefined || !category) {
+    return res.status(400).json({ 
+      error: "Latitude, longitude, and category are required" 
+    });
+  }
+  
+  // Configuration (adjustable values)
+  const RADIUS_METERS = 200;      // Within 200 meters
+  const DAYS_WINDOW = 7;          // Last 7 days
+  
+  try {
+    // Calculate date boundary
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - DAYS_WINDOW);
+    
+    // Query Firestore for requests with same category and NOT resolved
+    const snapshot = await db.collection("requests")
+      .where("category", "==", category)
+      .get();
+    
+    const similarRequests = [];
+    
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+      
+      // Skip if no location data
+      if (data.latitude === undefined || data.longitude === undefined) continue;
+      
+      // Skip if resolved
+      if (data.status === "resolved") continue;
+      
+      // Skip if older than cutoff date
+      const createdAt = data.createdAt?.toDate();
+      if (createdAt && createdAt < cutoffDate) continue;
+      
+      // Calculate distance
+      const distance = calculateDistance(
+        latitude, longitude,
+        data.latitude, data.longitude
+      );
+      
+      if (distance <= RADIUS_METERS) {
+        similarRequests.push({
+          id: doc.id,
+          category: data.category,
+          description: data.description.substring(0, 100),
+          status: data.status,
+          createdAt: data.createdAt?.toDate().toISOString() || null,
+          distance: Math.round(distance),
+          userEmail: data.userEmail
+        });
+      }
+    }
+    
+    // Return duplicates if found
+    if (similarRequests.length > 0) {
+      res.json({
+        hasDuplicates: true,
+        duplicates: similarRequests,
+        message: `Found ${similarRequests.length} similar request(s) nearby.`
+      });
+    } else {
+      res.json({
+        hasDuplicates: false,
+        duplicates: [],
+        message: "No similar requests found nearby."
+      });
+    }
+    
+  } catch (err) {
+    console.error("Duplicate check error:", err);
+    res.status(500).json({ error: "Failed to check for duplicates" });
   }
 });
 
