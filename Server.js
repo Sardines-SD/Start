@@ -580,6 +580,53 @@ app.post("/api/requests/:id/claim", requireAuth, async (req, res) => {
   }
 });
 
+// ── UNCLAIM REQUEST — Sprint 4 US3 ───────────────────────────────────────────
+// Allows the assigned worker to release a request back to the unassigned pool.
+// The request status reverts to "pending" and claimedAt / assignedTo are cleared.
+app.post("/api/requests/:id/unclaim", requireAuth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const role = await getRole(req.user.uid);
+    if (role !== "worker") {
+      return res.status(403).json({ error: "Forbidden – workers only" });
+    }
+
+    const docRef  = db.collection("requests").doc(id);
+    const docSnap = await docRef.get();
+
+    if (!docSnap.exists) {
+      return res.status(404).json({ error: "Request not found" });
+    }
+
+    const data = docSnap.data();
+
+    if (!data.claimedAt) {
+      return res.status(400).json({ error: "This request has not been claimed" });
+    }
+    if (data.assignedTo !== req.user.uid) {
+      return res.status(403).json({ error: "You can only release requests you have claimed" });
+    }
+    if (data.status === "resolved") {
+      return res.status(400).json({ error: "Resolved requests cannot be unclaimed" });
+    }
+
+    await docRef.update({
+      assignedTo:  null,
+      claimedAt:   null,
+      status:      "pending",
+      unclaimedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    console.log(`Request ${id} released by worker ${req.user.uid}`);
+    res.json({ message: "Request released back to the pool" });
+
+  } catch (err) {
+    console.error("Error unclaiming request:", err);
+    res.status(500).json({ error: "Failed to release request" });
+  }
+});
+
+
 // ── UPDATE REQUEST STATUS ─────────────────────────────────────────────────────
 app.patch("/api/requests/:id", requireAuth, async (req, res) => {
   const { id }     = req.params;

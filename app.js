@@ -272,6 +272,217 @@ function buildFullCSV(requests) {
   return [header, ...rows].join('\n');
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 4: New Business Logic
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── US1: Escalation ───────────────────────────────────────────────────────────
+
+/**
+ * Validates whether a resident can escalate a given request.
+ * Rules: must own the request, must not already be escalated, must not be resolved.
+ * @param {object} report - The Firestore request document
+ * @param {string} userId - The UID of the requesting user
+ * @returns {{ valid: boolean, error: string|null }}
+ */
+function canEscalateRequest(report, userId) {
+  if (report.userId !== userId) {
+    return { valid: false, error: 'You can only escalate your own requests' };
+  }
+  if (report.escalated) {
+    return { valid: false, error: 'This request has already been escalated' };
+  }
+  if (report.status === 'resolved') {
+    return { valid: false, error: 'Resolved requests cannot be escalated' };
+  }
+  return { valid: true, error: null };
+}
+
+/**
+ * Validates the optional escalation reason field.
+ * Reason is optional — undefined/null/empty string all pass.
+ * When provided, must be a non-empty string ≤ 200 characters.
+ * @param {string|undefined|null} reason
+ * @returns {{ valid: boolean, error: string|null }}
+ */
+function validateEscalationReason(reason) {
+  if (reason === undefined || reason === null || reason === '') {
+    return { valid: true, error: null }; // field is optional
+  }
+  if (typeof reason !== 'string') {
+    return { valid: false, error: 'Escalation reason must be a string' };
+  }
+  if (reason.trim().length === 0) {
+    return { valid: false, error: 'Escalation reason cannot be blank' };
+  }
+  if (reason.length > 200) {
+    return { valid: false, error: 'Escalation reason must be 200 characters or fewer' };
+  }
+  return { valid: true, error: null };
+}
+
+/**
+ * Builds the Firestore update payload for an escalation action.
+ * @param {string|undefined} reason - Optional reason text
+ * @returns {object} Fields to merge into the Firestore document
+ */
+function buildEscalationPayload(reason) {
+  return {
+    escalated:        true,
+    escalatedAt:      Date.now(),
+    escalationReason: reason || null,
+  };
+}
+
+// ── US2: Public map marker colour ─────────────────────────────────────────────
+
+/**
+ * Returns the Leaflet marker colour string for a request.
+ * Escalated requests always return 'red' regardless of status.
+ * @param {string} status - 'pending' | 'in-progress' | 'resolved'
+ * @param {boolean} escalated - Whether the request has been escalated
+ * @returns {string} colour name
+ */
+function getMarkerColour(status, escalated = false) {
+  if (escalated) return 'red';
+  const map = {
+    'pending':     'orange',
+    'in-progress': 'blue',
+    'resolved':    'green',
+  };
+  return map[status] ?? 'grey';
+}
+
+// ── US3: Unclaim (release) a request ─────────────────────────────────────────
+
+/**
+ * Returns true when the requesting worker is allowed to unclaim a request.
+ * Only the worker who originally claimed it may release it.
+ * @param {object} report - Firestore request document
+ * @param {string} workerUid - UID of the worker attempting to unclaim
+ * @returns {{ valid: boolean, error: string|null }}
+ */
+function canUnclaimRequest(report, workerUid) {
+  if (!report.assignedTo || !report.claimedAt) {
+    return { valid: false, error: 'This request has not been claimed' };
+  }
+  if (report.assignedTo !== workerUid) {
+    return { valid: false, error: 'You can only release requests you have claimed' };
+  }
+  if (report.status === 'resolved') {
+    return { valid: false, error: 'Resolved requests cannot be unclaimed' };
+  }
+  return { valid: true, error: null };
+}
+
+/**
+ * Builds the Firestore update payload for an unclaim action.
+ * Clears assignedTo, claimedAt and reverts status to pending.
+ * @returns {object} Fields to merge into the Firestore document
+ */
+function buildUnclaimPayload() {
+  return {
+    assignedTo:  null,
+    claimedAt:   null,
+    status:      'pending',
+    unclaimedAt: Date.now(),
+  };
+}
+
+// ── US4: Duplicate detection ──────────────────────────────────────────────────
+
+const DUPLICATE_RADIUS_KM     = 0.5;  // flag if within 500 m
+const DUPLICATE_TIME_WINDOW_H = 24;   // within last 24 hours
+
+/**
+ * Calculates the Haversine distance in kilometres between two lat/lng points.
+ * @param {number} lat1 @param {number} lng1
+ * @param {number} lat2 @param {number} lng2
+ * @returns {number} distance in km
+ */
+function haversineDistanceKm(lat1, lng1, lat2, lng2) {
+  const R    = 6371; // Earth radius km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/**
+ * Returns true when two timestamps (ms) are within the given time window.
+ * @param {number} tsA @param {number} tsB @param {number} windowHours
+ */
+function isWithinTimeWindow(tsA, tsB, windowHours = DUPLICATE_TIME_WINDOW_H) {
+  return Math.abs(tsA - tsB) <= windowHours * 3_600_000;
+}
+
+/**
+ * Finds potential duplicate reports for a new submission.
+ * A duplicate candidate must match category, be within DUPLICATE_RADIUS_KM,
+ * and have been submitted within DUPLICATE_TIME_WINDOW_H hours.
+ *
+ * @param {object} newReport     - { category, latitude, longitude, createdAtMs }
+ * @param {object[]} existing    - Array of existing Firestore report objects
+ * @returns {object[]} matching duplicates (may be empty)
+ */
+function findPotentialDuplicates(newReport, existing) {
+  if (
+    typeof newReport.latitude  !== 'number' ||
+    typeof newReport.longitude !== 'number'
+  ) return [];
+
+  return existing.filter(r => {
+    if (r.category !== newReport.category)             return false;
+    if (typeof r.latitude  !== 'number')               return false;
+    if (typeof r.longitude !== 'number')               return false;
+
+    const dist = haversineDistanceKm(
+      newReport.latitude, newReport.longitude,
+      r.latitude,         r.longitude
+    );
+    if (dist > DUPLICATE_RADIUS_KM)                    return false;
+
+    if (newReport.createdAtMs && r.createdAtMs) {
+      if (!isWithinTimeWindow(newReport.createdAtMs, r.createdAtMs)) return false;
+    }
+
+    return true;
+  });
+}
+
+// ── US5 (Bonus): Dark-mode preference helpers ─────────────────────────────────
+
+/**
+ * Returns true when a theme string is a supported theme value.
+ * @param {string} theme
+ */
+function isValidTheme(theme) {
+  return theme === 'light' || theme === 'dark';
+}
+
+/**
+ * Toggles between 'light' and 'dark'.
+ * @param {string} currentTheme
+ * @returns {string}
+ */
+function toggleTheme(currentTheme) {
+  return currentTheme === 'dark' ? 'light' : 'dark';
+}
+
+/**
+ * Applies a CSS class to a document root element for theming.
+ * Returns the class name that should be added/removed.
+ * @param {string} theme
+ * @returns {string} class name
+ */
+function getThemeClass(theme) {
+  return theme === 'dark' ? 'dark-mode' : 'light-mode';
+}
+
 // ── Exports ───────────────────────────────────────────────────────────────────
 module.exports = {
   // Sprint 1
@@ -305,10 +516,25 @@ module.exports = {
   validateFeedback,
   buildCSVRow,
   buildFullCSV,
+  // Sprint 4
+  canEscalateRequest,
+  validateEscalationReason,
+  buildEscalationPayload,
+  getMarkerColour,
+  canUnclaimRequest,
+  buildUnclaimPayload,
+  haversineDistanceKm,
+  isWithinTimeWindow,
+  findPotentialDuplicates,
+  isValidTheme,
+  toggleTheme,
+  getThemeClass,
   // Constants
   VALID_STATUSES,
   VALID_ROLES,
   VALID_CATEGORIES,
   VALID_PRIORITIES,
   IMAGE_SIZE_LIMIT,
+  DUPLICATE_RADIUS_KM,
+  DUPLICATE_TIME_WINDOW_H,
 };

@@ -147,6 +147,11 @@ function buildRow(req, showClaimBtn) {
           <option value="in-progress" ${req.status === "in-progress" ? "selected" : ""}>In Progress</option>
           <option value="resolved"    ${req.status === "resolved"    ? "selected" : ""}>Resolved</option>
         </select>
+        ${req.status !== "resolved"
+          ? `<button class="btn-unclaim" data-id="${escapeHtml(req.firestoreId)}" onclick="unclaimRequest(this)" title="Release this request back to the pool" style="margin-top:6px;display:block;width:100%;font-size:12px;padding:4px 8px;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;border-radius:4px;cursor:pointer;">
+               Release
+             </button>`
+          : ''}
        </td>`;
 
   return `
@@ -217,6 +222,45 @@ window.claimRequest = async function (btn) {
     alert("Failed to accept request: " + err.message);
     btn.disabled    = false;
     btn.textContent = "Accept";
+  }
+};
+
+// ── US3 Sprint 4: Release (unclaim) a previously accepted request ─────────────
+window.unclaimRequest = async function (btn) {
+  const firestoreId = btn.dataset.id;
+
+  if (!confirm("Release this request? It will return to the unassigned pool and your progress will be cleared.")) return;
+
+  btn.disabled    = true;
+  btn.textContent = "Releasing...";
+
+  try {
+    const token = await getFreshToken();
+    const res   = await fetch(`/api/requests/${firestoreId}/unclaim`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || "Failed to release request");
+    }
+
+    // Remove from local state (it's no longer assigned to this worker) and re-render
+    allRequests = allRequests.filter(r => r.firestoreId !== firestoreId);
+    renderTable(allRequests);
+
+    // Show brief confirmation banner
+    const banner = document.createElement("div");
+    banner.textContent = "Request released back to the pool.";
+    banner.style.cssText = "position:fixed;top:16px;right:16px;background:#d4edda;color:#155724;border:1px solid #c3e6cb;padding:10px 18px;border-radius:6px;font-size:14px;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.15)";
+    document.body.appendChild(banner);
+    setTimeout(() => banner.remove(), 3000);
+
+  } catch (err) {
+    alert("Could not release request: " + err.message);
+    btn.disabled    = false;
+    btn.textContent = "Release";
   }
 };
 

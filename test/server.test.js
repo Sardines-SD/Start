@@ -31,6 +31,21 @@ const {
   validateFeedback,
   buildCSVRow,
   buildFullCSV,
+  // Sprint 4
+  canEscalateRequest,
+  validateEscalationReason,
+  buildEscalationPayload,
+  getMarkerColour,
+  canUnclaimRequest,
+  buildUnclaimPayload,
+  haversineDistanceKm,
+  isWithinTimeWindow,
+  findPotentialDuplicates,
+  isValidTheme,
+  toggleTheme,
+  getThemeClass,
+  DUPLICATE_RADIUS_KM,
+  DUPLICATE_TIME_WINDOW_H,
 } = require('../app');
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -538,5 +553,376 @@ describe('Sprint 3 US6 — Analytics and CSV', () => {
     const lines = buildFullCSV([]).split('\n');
     expect(lines.length).toBe(1);
     expect(lines[0]).toContain('Category');
+  });
+});
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 4 US1 — Escalate an Unresolved Service Request
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('Sprint 4 US1 — canEscalateRequest', () => {
+  const base = { userId: 'user_A', status: 'pending', escalated: false };
+
+  // ── Equivalence classes: who can escalate ────────────────────────────────
+  test('owner can escalate a pending request', () => {
+    expect(canEscalateRequest(base, 'user_A').valid).toBe(true);
+  });
+  test('owner can escalate an in-progress request', () => {
+    expect(canEscalateRequest({ ...base, status: 'in-progress' }, 'user_A').valid).toBe(true);
+  });
+  test('different user cannot escalate', () => {
+    const r = canEscalateRequest(base, 'user_B');
+    expect(r.valid).toBe(false);
+    expect(r.error).toContain('own');
+  });
+  test('worker cannot escalate a resident request', () => {
+    expect(canEscalateRequest(base, 'worker_uid').valid).toBe(false);
+  });
+
+  // ── Boundary: escalation state ───────────────────────────────────────────
+  test('already-escalated request is rejected', () => {
+    const r = canEscalateRequest({ ...base, escalated: true }, 'user_A');
+    expect(r.valid).toBe(false);
+    expect(r.error).toContain('already');
+  });
+  test('resolved request cannot be escalated', () => {
+    const r = canEscalateRequest({ ...base, status: 'resolved' }, 'user_A');
+    expect(r.valid).toBe(false);
+    expect(r.error).toContain('resolved');
+  });
+});
+
+describe('Sprint 4 US1 — validateEscalationReason (boundary testing)', () => {
+  // ── Equivalence class: optional field ───────────────────────────────────
+  test('undefined reason is valid (field optional)', () => {
+    expect(validateEscalationReason(undefined).valid).toBe(true);
+  });
+  test('null reason is valid', () => {
+    expect(validateEscalationReason(null).valid).toBe(true);
+  });
+  test('empty string reason is valid', () => {
+    expect(validateEscalationReason('').valid).toBe(true);
+  });
+
+  // ── Equivalence class: valid string ─────────────────────────────────────
+  test('short reason is valid', () => {
+    expect(validateEscalationReason('Still not fixed after 2 weeks').valid).toBe(true);
+  });
+  test('reason at exactly 200 chars is valid (upper boundary)', () => {
+    expect(validateEscalationReason('a'.repeat(200)).valid).toBe(true);
+  });
+
+  // ── Boundary: too long ───────────────────────────────────────────────────
+  test('reason at 201 chars is invalid (one over boundary)', () => {
+    const r = validateEscalationReason('a'.repeat(201));
+    expect(r.valid).toBe(false);
+    expect(r.error).toContain('200');
+  });
+  test('reason of 500 chars is invalid', () => {
+    expect(validateEscalationReason('a'.repeat(500)).valid).toBe(false);
+  });
+
+  // ── Equivalence class: wrong type ───────────────────────────────────────
+  test('numeric reason is invalid', () => {
+    expect(validateEscalationReason(42).valid).toBe(false);
+  });
+  test('whitespace-only reason is invalid', () => {
+    expect(validateEscalationReason('   ').valid).toBe(false);
+  });
+});
+
+describe('Sprint 4 US1 — buildEscalationPayload', () => {
+  test('sets escalated to true', () => {
+    expect(buildEscalationPayload('reason').escalated).toBe(true);
+  });
+  test('stores escalation reason', () => {
+    expect(buildEscalationPayload('Road is dangerous').escalationReason).toBe('Road is dangerous');
+  });
+  test('no reason stores null', () => {
+    expect(buildEscalationPayload('').escalationReason).toBeNull();
+  });
+  test('includes escalatedAt timestamp', () => {
+    const before = Date.now();
+    expect(buildEscalationPayload('').escalatedAt).toBeGreaterThanOrEqual(before);
+  });
+  test('does not mutate any external state', () => {
+    const p1 = buildEscalationPayload('A');
+    const p2 = buildEscalationPayload('B');
+    expect(p1.escalationReason).toBe('A');
+    expect(p2.escalationReason).toBe('B');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 4 US2 — Escalated Request Highlighting on Public Map
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('Sprint 4 US2 — getMarkerColour', () => {
+  // ── Equivalence class: normal status colours ──────────────────────────────
+  test('pending → orange marker', () => {
+    expect(getMarkerColour('pending', false)).toBe('orange');
+  });
+  test('in-progress → blue marker', () => {
+    expect(getMarkerColour('in-progress', false)).toBe('blue');
+  });
+  test('resolved → green marker', () => {
+    expect(getMarkerColour('resolved', false)).toBe('green');
+  });
+  test('unknown status → grey fallback', () => {
+    expect(getMarkerColour('draft', false)).toBe('grey');
+  });
+  test('empty status → grey fallback', () => {
+    expect(getMarkerColour('', false)).toBe('grey');
+  });
+
+  // ── Equivalence class: escalated overrides all statuses ──────────────────
+  test('escalated pending → red', () => {
+    expect(getMarkerColour('pending', true)).toBe('red');
+  });
+  test('escalated in-progress → red', () => {
+    expect(getMarkerColour('in-progress', true)).toBe('red');
+  });
+  test('escalated resolved → red', () => {
+    expect(getMarkerColour('resolved', true)).toBe('red');
+  });
+  test('escalated unknown status → red', () => {
+    expect(getMarkerColour('draft', true)).toBe('red');
+  });
+
+  // ── Boundary: default escalated parameter ────────────────────────────────
+  test('escalated defaults to false when omitted', () => {
+    expect(getMarkerColour('pending')).toBe('orange');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 4 US3 — Release (Unclaim) a Previously Claimed Request
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('Sprint 4 US3 — canUnclaimRequest', () => {
+  const claimed = { assignedTo: 'worker_A', claimedAt: Date.now(), status: 'in-progress', userId: 'user_X' };
+
+  // ── Equivalence class: valid unclaim ─────────────────────────────────────
+  test('assigned worker can unclaim their own request', () => {
+    expect(canUnclaimRequest(claimed, 'worker_A').valid).toBe(true);
+  });
+
+  // ── Equivalence class: wrong worker ──────────────────────────────────────
+  test('different worker cannot unclaim', () => {
+    const r = canUnclaimRequest(claimed, 'worker_B');
+    expect(r.valid).toBe(false);
+    expect(r.error).toContain('claimed');
+  });
+
+  // ── Equivalence class: not yet claimed ───────────────────────────────────
+  test('unclaimed request (no assignedTo) cannot be unclaimed', () => {
+    const r = canUnclaimRequest({ assignedTo: null, claimedAt: null, status: 'pending' }, 'worker_A');
+    expect(r.valid).toBe(false);
+    expect(r.error).toContain('not been claimed');
+  });
+  test('request with assignedTo but no claimedAt cannot be unclaimed', () => {
+    const r = canUnclaimRequest({ assignedTo: 'worker_A', claimedAt: null, status: 'pending' }, 'worker_A');
+    expect(r.valid).toBe(false);
+  });
+
+  // ── Boundary: resolved requests ──────────────────────────────────────────
+  test('resolved request cannot be unclaimed', () => {
+    const r = canUnclaimRequest({ ...claimed, status: 'resolved' }, 'worker_A');
+    expect(r.valid).toBe(false);
+    expect(r.error).toContain('resolved');
+  });
+
+  // ── Boundary: null workerUid ─────────────────────────────────────────────
+  test('null workerUid cannot unclaim', () => {
+    expect(canUnclaimRequest(claimed, null).valid).toBe(false);
+  });
+  test('undefined workerUid cannot unclaim', () => {
+    expect(canUnclaimRequest(claimed, undefined).valid).toBe(false);
+  });
+});
+
+describe('Sprint 4 US3 — buildUnclaimPayload', () => {
+  test('sets assignedTo to null', () => {
+    expect(buildUnclaimPayload().assignedTo).toBeNull();
+  });
+  test('sets claimedAt to null', () => {
+    expect(buildUnclaimPayload().claimedAt).toBeNull();
+  });
+  test('reverts status to pending', () => {
+    expect(buildUnclaimPayload().status).toBe('pending');
+  });
+  test('includes unclaimedAt timestamp', () => {
+    const before = Date.now();
+    expect(buildUnclaimPayload().unclaimedAt).toBeGreaterThanOrEqual(before);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 4 US4 — Duplicate Detection
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('Sprint 4 US4 — haversineDistanceKm (boundary cases)', () => {
+  test('same point returns 0 km', () => {
+    expect(haversineDistanceKm(-26.2041, 28.0473, -26.2041, 28.0473)).toBeCloseTo(0, 3);
+  });
+  test('Joburg CBD to Sandton (~22 km) is > 0', () => {
+    expect(haversineDistanceKm(-26.2041, 28.0473, -26.1076, 28.0567)).toBeGreaterThan(5);
+  });
+  test('adjacent points within 500 m are < 0.5 km', () => {
+    // ~100 m apart
+    expect(haversineDistanceKm(-26.2041, 28.0473, -26.2050, 28.0473)).toBeLessThan(0.5);
+  });
+  test('distance is always non-negative', () => {
+    expect(haversineDistanceKm(-33.9, 18.4, -26.2, 28.0)).toBeGreaterThan(0);
+  });
+  test('result is symmetric (A→B equals B→A)', () => {
+    const ab = haversineDistanceKm(-26.2, 28.0, -29.8, 31.0);
+    const ba = haversineDistanceKm(-29.8, 31.0, -26.2, 28.0);
+    expect(ab).toBeCloseTo(ba, 5);
+  });
+});
+
+describe('Sprint 4 US4 — isWithinTimeWindow (boundary cases)', () => {
+  const ONE_HOUR = 3_600_000;
+
+  test('same timestamp is within window', () => {
+    const now = Date.now();
+    expect(isWithinTimeWindow(now, now, 24)).toBe(true);
+  });
+  test('exactly at window boundary is within (inclusive)', () => {
+    const now = Date.now();
+    expect(isWithinTimeWindow(now, now - 24 * ONE_HOUR, 24)).toBe(true);
+  });
+  test('one ms beyond boundary is outside window', () => {
+    const now = Date.now();
+    expect(isWithinTimeWindow(now, now - 24 * ONE_HOUR - 1, 24)).toBe(false);
+  });
+  test('within 1-hour window passes', () => {
+    const now = Date.now();
+    expect(isWithinTimeWindow(now, now - 30 * 60_000, 1)).toBe(true);
+  });
+  test('beyond 1-hour window fails', () => {
+    const now = Date.now();
+    expect(isWithinTimeWindow(now, now - 2 * ONE_HOUR, 1)).toBe(false);
+  });
+  test('works in either time direction (order independent)', () => {
+    const t = Date.now();
+    expect(isWithinTimeWindow(t - ONE_HOUR, t, 24)).toBe(true);
+    expect(isWithinTimeWindow(t, t - ONE_HOUR, 24)).toBe(true);
+  });
+});
+
+describe('Sprint 4 US4 — findPotentialDuplicates', () => {
+  const NOW = Date.now();
+  const ONE_HOUR = 3_600_000;
+
+  const existing = [
+    // Same category, nearby, recent — DUPLICATE
+    { id: 'r1', category: 'Pothole', latitude: -26.2050, longitude: 28.0474, createdAtMs: NOW - ONE_HOUR },
+    // Same category, too far away — NOT duplicate
+    { id: 'r2', category: 'Pothole', latitude: -26.3000, longitude: 28.1000, createdAtMs: NOW - ONE_HOUR },
+    // Different category, nearby — NOT duplicate
+    { id: 'r3', category: 'Water',   latitude: -26.2050, longitude: 28.0474, createdAtMs: NOW - ONE_HOUR },
+    // Same category, nearby, too old — NOT duplicate
+    { id: 'r4', category: 'Pothole', latitude: -26.2050, longitude: 28.0474, createdAtMs: NOW - 30 * ONE_HOUR },
+  ];
+
+  const newReport = {
+    category:    'Pothole',
+    latitude:    -26.2041,
+    longitude:   28.0473,
+    createdAtMs: NOW,
+  };
+
+  test('finds one nearby same-category recent report', () => {
+    const dups = findPotentialDuplicates(newReport, existing);
+    expect(dups).toHaveLength(1);
+    expect(dups[0].id).toBe('r1');
+  });
+  test('far-away same-category report is not a duplicate', () => {
+    const dups = findPotentialDuplicates(newReport, existing);
+    expect(dups.map(d => d.id)).not.toContain('r2');
+  });
+  test('nearby different-category report is not a duplicate', () => {
+    const dups = findPotentialDuplicates(newReport, existing);
+    expect(dups.map(d => d.id)).not.toContain('r3');
+  });
+  test('nearby same-category but too old is not a duplicate', () => {
+    const dups = findPotentialDuplicates(newReport, existing);
+    expect(dups.map(d => d.id)).not.toContain('r4');
+  });
+  test('returns empty array when no existing reports', () => {
+    expect(findPotentialDuplicates(newReport, [])).toHaveLength(0);
+  });
+  test('returns empty array when new report has no coordinates', () => {
+    expect(findPotentialDuplicates({ category: 'Pothole' }, existing)).toHaveLength(0);
+  });
+  test('ignores existing reports with non-numeric coordinates', () => {
+    const weird = [{ id: 'r9', category: 'Pothole', latitude: 'bad', longitude: 'bad', createdAtMs: NOW }];
+    expect(findPotentialDuplicates(newReport, weird)).toHaveLength(0);
+  });
+  test('multiple duplicates are all returned', () => {
+    const extra = [
+      { id: 'r5', category: 'Pothole', latitude: -26.2043, longitude: 28.0471, createdAtMs: NOW - ONE_HOUR },
+      { id: 'r6', category: 'Pothole', latitude: -26.2045, longitude: 28.0472, createdAtMs: NOW - 2 * ONE_HOUR },
+    ];
+    expect(findPotentialDuplicates(newReport, [...existing, ...extra]).length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 4 US5 (Bonus) — Dark Mode Support
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('Sprint 4 US5 (Bonus) — Dark mode helpers', () => {
+  // ── isValidTheme ─────────────────────────────────────────────────────────
+  test('"light" is a valid theme', () => {
+    expect(isValidTheme('light')).toBe(true);
+  });
+  test('"dark" is a valid theme', () => {
+    expect(isValidTheme('dark')).toBe(true);
+  });
+  test('empty string is not a valid theme', () => {
+    expect(isValidTheme('')).toBe(false);
+  });
+  test('"auto" is not a supported theme', () => {
+    expect(isValidTheme('auto')).toBe(false);
+  });
+  test('null is not a valid theme', () => {
+    expect(isValidTheme(null)).toBe(false);
+  });
+
+  // ── toggleTheme ──────────────────────────────────────────────────────────
+  test('toggling dark returns light', () => {
+    expect(toggleTheme('dark')).toBe('light');
+  });
+  test('toggling light returns dark', () => {
+    expect(toggleTheme('light')).toBe('dark');
+  });
+  test('toggling twice returns original', () => {
+    expect(toggleTheme(toggleTheme('dark'))).toBe('dark');
+  });
+
+  // ── getThemeClass ────────────────────────────────────────────────────────
+  test('dark theme returns "dark-mode" class', () => {
+    expect(getThemeClass('dark')).toBe('dark-mode');
+  });
+  test('light theme returns "light-mode" class', () => {
+    expect(getThemeClass('light')).toBe('light-mode');
+  });
+  test('unknown theme defaults to light-mode class', () => {
+    expect(getThemeClass('system')).toBe('light-mode');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 4 — Constants validation
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('Sprint 4 — Duplicate detection constants', () => {
+  test('DUPLICATE_RADIUS_KM is 0.5 (500 m)', () => {
+    expect(DUPLICATE_RADIUS_KM).toBe(0.5);
+  });
+  test('DUPLICATE_TIME_WINDOW_H is 24 hours', () => {
+    expect(DUPLICATE_TIME_WINDOW_H).toBe(24);
   });
 });
