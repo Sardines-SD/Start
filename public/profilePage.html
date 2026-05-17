@@ -343,13 +343,9 @@ body.dark-mode .header-sub { color: #94a3b8; }
 </footer>
 
 <script type="module" src="profilePage.js"></script>
-
-<script type="module">
-  import { auth, db } from './firebaseConfig.js';
-  import { doc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-
-  const savedLocal = localStorage.getItem('darkMode') === 'true';
-  if (savedLocal) document.body.classList.add('dark-mode');
+<script>
+  const _dm = localStorage.getItem('darkMode') === 'true';
+  if (_dm) document.body.classList.add('dark-mode');
   document.documentElement.classList.remove('dark-mode-pending');
 
   const btn = document.createElement('button');
@@ -362,17 +358,26 @@ body.dark-mode .header-sub { color: #94a3b8; }
     font-size:20px; cursor:pointer; box-shadow:0 2px 10px rgba(0,0,0,0.3);
     transition: all 0.3s; display:flex; align-items:center; justify-content:center;
   `;
-  btn.innerHTML = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
-  btn.addEventListener('click', async () => {
+  btn.innerHTML = _dm ? '☀️' : '🌙';
+  btn.addEventListener('click', () => {
     const isDark = document.body.classList.toggle('dark-mode');
     btn.innerHTML = isDark ? '☀️' : '🌙';
     localStorage.setItem('darkMode', isDark);
+  });
+  document.body.appendChild(btn);
+</script>
+
+<script type="module">
+  import { auth, db } from './firebaseConfig.js';
+  import { doc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+  document.getElementById('darkModeToggle').addEventListener('click', async () => {
+    const isDark = document.body.classList.contains('dark-mode');
     try {
       const user = auth.currentUser;
       if (user) await updateDoc(doc(db, 'users', user.uid), { darkMode: isDark });
     } catch(e) { console.warn('Could not save dark mode preference', e); }
   });
-  document.body.appendChild(btn);
 </script>
 
 </body>
