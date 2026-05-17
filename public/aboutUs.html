@@ -5,6 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>About Us - Municipal Service Portal</title>
   <link rel="stylesheet" href="styler.css">
+
+<script>
+  // Apply saved theme immediately (prevents flash)
+  (function() {
+    if (localStorage.getItem('darkMode') === 'true') {
+      document.documentElement.classList.add('dark-mode-pending');
+    }
+  })();
+</script>
+<style>
+  html.dark-mode-pending body { background-color: #0f172a; }
+</style>
+
   <style>
     * {
       margin: 0;
@@ -266,5 +279,34 @@
   <footer>
     <p>&copy; 2026 Municipal Service Delivery Portal | Together for a Better Community</p>
   </footer>
+
+<script>
+  // ── DARK MODE (localStorage only – public/auth pages) ──
+  const _dm = localStorage.getItem('darkMode') === 'true';
+  if (_dm) document.body.classList.add('dark-mode');
+  document.documentElement.classList.remove('dark-mode-pending');
+
+  function injectDarkToggle(containerId) {
+    const btn = document.createElement('button');
+    btn.id = 'darkModeToggle';
+    btn.title = 'Toggle dark mode';
+    btn.style.cssText = `
+      position:fixed; bottom:20px; right:20px; z-index:9999;
+      width:44px; height:44px; border-radius:50%; border:none;
+      background: rgba(43,95,168,0.9); color:white;
+      font-size:20px; cursor:pointer; box-shadow:0 2px 10px rgba(0,0,0,0.3);
+      transition: all 0.3s; display:flex; align-items:center; justify-content:center;
+    `;
+    btn.innerHTML = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
+    btn.addEventListener('click', () => {
+      const isDark = document.body.classList.toggle('dark-mode');
+      btn.innerHTML = isDark ? '☀️' : '🌙';
+      localStorage.setItem('darkMode', isDark);
+    });
+    document.body.appendChild(btn);
+  }
+
+  injectDarkToggle();
+</script>
 </body>
 </html>

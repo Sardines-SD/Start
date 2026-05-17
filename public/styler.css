@@ -1,3 +1,57 @@
+
+
+/* =====================
+   DARK MODE CSS VARIABLES
+   ===================== */
+
+:root {
+  --bg-body-overlay: rgba(0,0,0,0.35);
+  --card-bg: #ffffff;
+  --card-bg-alpha: rgba(255,255,255,0.95);
+  --text-primary: #333;
+  --text-secondary: #444;
+  --text-muted: #6b7280;
+  --border-color: #ddd;
+  --input-bg: #ffffff;
+  --table-hover: #f1f5ff;
+  --row-border: #eee;
+  --output-bg: #e9f2ff;
+  --section-bg: white;
+  --public-dash-bg: rgba(225, 235, 250, 0.93);
+  --public-dash-text: #1a2a3a;
+  --stat-card-bg: white;
+  --stat-card-num: #2b5fa8;
+  --stat-card-label: #4a6a8a;
+  --table-row-hover: #dde8f8;
+  --td-color: #2a3a4a;
+  --row-border-pub: #d0dcea;
+}
+
+body.dark-mode {
+  --bg-body-overlay: rgba(0,0,0,0.65);
+  --card-bg: #1e2535;
+  --card-bg-alpha: rgba(22,30,48,0.97);
+  --text-primary: #e2e8f0;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --border-color: #334155;
+  --input-bg: #0f172a;
+  --table-hover: #1e3a5f;
+  --row-border: #334155;
+  --output-bg: #1e3a5f;
+  --section-bg: #1e2535;
+  --public-dash-bg: rgba(15, 25, 45, 0.96);
+  --public-dash-text: #e2e8f0;
+  --stat-card-bg: #1e2535;
+  --stat-card-num: #60a5fa;
+  --stat-card-label: #94a3b8;
+  --table-row-hover: #1e3a5f;
+  --td-color: #cbd5e1;
+  --row-border-pub: #334155;
+}
+
+
+
 body {
   margin: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -47,7 +101,7 @@ main {
 
 /* Cards / Sections */
 section {
-  background: white;
+  background: var(--section-bg);
   padding: 25px;
   margin-bottom: 25px;
   border-radius: 15px;
@@ -68,14 +122,16 @@ form {
 label {
   margin-top: 12px;
   font-weight: 600;
-  color: #444;
+  color: var(--text-secondary);
 }
 
 input, textarea, select {
   padding: 12px;
   margin-top: 6px;
   border-radius: 8px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
+  background: var(--input-bg);
+  color: var(--text-primary);
   transition: border 0.3s, box-shadow 0.3s;
   font-size: 14px;
 }
@@ -126,11 +182,11 @@ th {
 
 td {
   padding: 12px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--row-border);
 }
 
 tr:hover {
-  background: #f1f5ff;
+  background: var(--table-hover);
 }
 
 /* Output */
@@ -138,7 +194,7 @@ output {
   display: block;
   margin-top: 12px;
   padding: 10px;
-  background: #e9f2ff;
+  background: var(--output-bg);
   border-left: 4px solid #007bff;
   border-radius: 6px;
 }
@@ -150,7 +206,7 @@ output {
 ========================= */
 
 .public-dashboard-section {
-  background: rgba(225, 235, 250, 0.93);
+  background: var(--public-dash-bg);
   border-radius: 12px;
   padding: 32px;
   max-width: 1400px;
@@ -160,7 +216,7 @@ output {
 
 .public-dashboard-section h2 {
   margin-top: 0;
-  color: #1a2a3a;
+  color: var(--public-dash-text);
 }
 
 .section-subtitle {
@@ -180,7 +236,7 @@ output {
 }
 
 .stat-card {
-  background: white;
+  background: var(--stat-card-bg);
   border-radius: 12px;
   padding: 20px;
   text-align: center;
@@ -190,13 +246,13 @@ output {
 .stat-card h3 {
   margin: 0;
   font-size: 34px;
-  color: #2b5fa8;
+  color: var(--stat-card-num);
 }
 
 .stat-card p {
   margin-top: 10px;
   font-weight: 600;
-  color: #4a6a8a;
+  color: var(--stat-card-label);
 }
 
 /* =========================
@@ -228,12 +284,12 @@ th {
 
 td {
   padding: 12px;
-  border-bottom: 1px solid #d0dcea;
-  color: #2a3a4a;
+  border-bottom: 1px solid var(--row-border-pub);
+  color: var(--td-color);
 }
 
 tr:hover td {
-  background: #dde8f8;
+  background: var(--table-row-hover);
 }
 
 /* =========================
