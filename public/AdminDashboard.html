@@ -17,6 +17,42 @@
 </style>
 
   <style>
+
+
+/* Light card containers with rgba(225,235,250,...) */
+body.dark-mode .card,
+body.dark-mode .admin-card,
+body.dark-mode .stat-box,
+body.dark-mode [class*="card"] {
+  background: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+/* rgba(255,255,255,0.7) panels */
+body.dark-mode .chart-wrapper,
+body.dark-mode .filter-bar,
+body.dark-mode .panel {
+  background: rgba(30, 37, 53, 0.9) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Hardcoded #f5f8fc table bg */
+body.dark-mode tbody tr { background-color: var(--section-bg) !important; }
+body.dark-mode td { color: var(--td-color); }
+
+/* Role/priority badges */
+body.dark-mode .badge-user       { background: #1e293b; color: #94a3b8; }
+body.dark-mode .badge-worker     { background: #0c2340; color: #7dd3fc; }
+body.dark-mode .badge-admin      { background: #2d0a0e; color: #fca5a5; }
+body.dark-mode .priority-low     { background: #0a2e1a; color: #6ee7b7; }
+body.dark-mode .priority-medium  { background: #3d2e00; color: #fcd34d; }
+body.dark-mode .priority-high    { background: #2d0a0e; color: #fca5a5; }
+
+/* Inline label colors (#4a6a8a) */
+body.dark-mode label { color: var(--text-muted); }
+
+
+
     /* Match User/Worker Dashboard styling */
 
     header {
@@ -777,6 +813,38 @@
       }
       .report-card { padding: 18px 14px; }
     }
+
+/* ── DARK MODE OVERRIDES ── */
+body.dark-mode .split-container,
+body.dark-mode .left-panel,
+body.dark-mode .right-panel,
+body.dark-mode .detail-card,
+body.dark-mode .report-card,
+body.dark-mode .analytics-section,
+body.dark-mode .tab-panel,
+body.dark-mode section { background: rgba(22, 30, 48, 0.97) !important; color: var(--text-primary); }
+body.dark-mode .chart-wrapper { background: rgba(22, 30, 48, 0.9) !important; }
+body.dark-mode .stat-card { background: var(--stat-card-bg); }
+body.dark-mode .report-title-group h2,
+body.dark-mode .report-title-group h3 { color: #60a5fa; }
+body.dark-mode label, body.dark-mode .report-header { color: var(--text-secondary); }
+body.dark-mode input, body.dark-mode select {
+  background-color: #0f172a; border-color: #334155; color: var(--text-primary);
+}
+body.dark-mode .tab-btn { background: #1e2535; color: var(--text-secondary); border-color: #334155; }
+body.dark-mode .tab-btn.active { background: #2b5fa8; color: white; }
+body.dark-mode .search-filter input { background: #0f172a; color: var(--text-primary); border-color: #334155; }
+body.dark-mode .role-tag { background: #1e3a5f; color: #93c5fd; }
+body.dark-mode .badge-pending    { background: #3d2e00; color: #fcd34d; }
+body.dark-mode .badge-inprogress { background: #0c2340; color: #93c5fd; }
+body.dark-mode .badge-resolved   { background: #0a2e1a; color: #6ee7b7; }
+body.dark-mode .badge-user       { background: #1e293b; color: #94a3b8; }
+body.dark-mode .badge-worker     { background: #0c2340; color: #7dd3fc; }
+body.dark-mode .badge-admin      { background: #2d0a0e; color: #fca5a5; }
+body.dark-mode .priority-low     { background: #0a2e1a; color: #6ee7b7; }
+body.dark-mode .priority-medium  { background: #3d2e00; color: #fcd34d; }
+body.dark-mode .priority-high    { background: #2d0a0e; color: #fca5a5; }
+body.dark-mode .empty-state, body.dark-mode .empty-chart { color: var(--text-muted); }
   </style>
 </head>
 <body>

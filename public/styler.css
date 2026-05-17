@@ -55,7 +55,7 @@ body.dark-mode {
 body {
   margin: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  color: #333;
+  body { color: var(--text-primary); }
 
   background-image:
     linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)),
@@ -88,7 +88,7 @@ header button {
 }
 
 header button:hover {
-  background: #e6f0ff;
+  header button:hover { background: rgba(0,123,255,0.15); }
   transform: translateY(-2px);
 }
 
@@ -220,7 +220,7 @@ output {
 }
 
 .section-subtitle {
-  color: #4a6a8a;
+  .section-subtitle { color: var(--text-muted); }
   margin-bottom: 25px;
 }
 
@@ -304,20 +304,23 @@ tr:hover td {
   font-weight: 700;
 }
 
-.badge-pending {
-  background: #fff3cd;
-  color: #856404;
+.body.dark-mode .badge-pending    
+{
+ background: #3d2e00;
+ color: #fcd34d;
+ }
+
+body.dark-mode .badge-in-progress 
+{ 
+background: #0c2340;
+ color: #93c5fd; 
 }
 
-.badge-in-progress {
-  background: #cce5ff;
-  color: #004085;
-}
-
-.badge-resolved {
-  background: #d4edda;
-  color: #155724;
-}
+body.dark-mode .badge-resolved 
+{
+ background: #0a2e1a;
+ color: #6ee7b7;
+ }
 
 /* =========================
    PUBLIC DASHBOARD BUTTON
