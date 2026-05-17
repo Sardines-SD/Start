@@ -176,6 +176,18 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
+
+// ── Apply saved dark mode preference ──
+  const pref = (userDoc.exists() && userDoc.data().darkMode != null)
+    ? userDoc.data().darkMode
+    : localStorage.getItem('darkMode') === 'true';
+  document.body.classList.toggle('dark-mode', pref);
+  localStorage.setItem('darkMode', pref);
+  const dmBtn = document.getElementById('darkModeToggle');
+  if (dmBtn) dmBtn.innerHTML = pref ? '☀️' : '🌙';
+
+
+
   document.getElementById("welcomeMsg").textContent = "Welcome, " + user.email;
   loadRequests();
   setupImagePreview();
