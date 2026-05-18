@@ -205,6 +205,7 @@ body.dark-mode label { color: var(--text-muted); }
       display: flex;
       gap: 0;
       margin-bottom: 20px;
+      flex-wrap: wrap;
     }
 
     .tab-btn {
@@ -241,8 +242,7 @@ body.dark-mode label { color: var(--text-muted); }
     .split-container {
       display: flex;
       gap: 20px;
-      height: calc(100vh - 400px);
-      min-height: 450px;
+      min-height: 500px;
     }
 
     /* LEFT PANEL - Request List */
@@ -256,6 +256,7 @@ body.dark-mode label { color: var(--text-muted); }
       gap: 15px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.18);
       overflow-y: auto;
+      max-height: 70vh;
     }
 
     /* RIGHT PANEL - Details */
@@ -266,6 +267,7 @@ body.dark-mode label { color: var(--text-muted); }
       padding: 20px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.18);
       overflow-y: auto;
+      max-height: 70vh;
     }
 
     /* Search Filter */
@@ -294,7 +296,7 @@ body.dark-mode label { color: var(--text-muted); }
       width: auto;
     }
 
-    /* Request List Items */
+    /* Request List Items - IMPROVED STYLING */
     .request-list {
       flex: 1;
       overflow-y: auto;
@@ -303,42 +305,64 @@ body.dark-mode label { color: var(--text-muted); }
     .request-item {
       background: rgba(255,255,255,0.7);
       padding: 15px;
-      margin-bottom: 10px;
-      border-radius: 10px;
+      margin-bottom: 12px;
+      border-radius: 12px;
       cursor: pointer;
       transition: all 0.2s;
+      border: 1px solid rgba(200, 212, 224, 0.5);
     }
 
     .request-item:hover {
       background: white;
       transform: translateX(5px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
 
     .request-item.selected {
       background: white;
       border-left: 4px solid #2b5fa8;
+      box-shadow: 0 2px 8px rgba(43, 95, 168, 0.2);
     }
 
     .request-title {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 8px;
+      align-items: center;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
     .request-id {
       font-weight: 700;
       color: #2b5fa8;
+      font-size: 14px;
+      background: rgba(43, 95, 168, 0.1);
+      padding: 3px 10px;
+      border-radius: 20px;
     }
 
     .request-category {
-      font-size: 14px;
-      font-weight: 600;
+      font-size: 15px;
+      font-weight: 700;
+      color: #1a2a3a;
+      margin-bottom: 8px;
+      display: inline-block;
+      background: rgba(43, 95, 168, 0.15);
+      padding: 4px 12px;
+      border-radius: 20px;
     }
 
     .request-desc {
       font-size: 13px;
       color: #4a6a8a;
-      margin: 5px 0;
+      margin: 8px 0;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     .request-meta {
@@ -346,7 +370,17 @@ body.dark-mode label { color: var(--text-muted); }
       gap: 15px;
       font-size: 12px;
       color: #6b7280;
-      margin-top: 8px;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(200, 212, 224, 0.5);
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .request-meta span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
     }
 
     /* Detail Card */
@@ -431,7 +465,7 @@ body.dark-mode label { color: var(--text-muted); }
       padding: 40px;
     }
 
-    /* Users Table - ORIGINAL STYLE RESTORED */
+    /* Users Table */
     .users-section {
       background: rgba(225, 235, 250, 0.93);
       border-radius: 12px;
@@ -473,7 +507,8 @@ body.dark-mode label { color: var(--text-muted); }
     }
 
     .users-table tr:hover td {
-      background: #dde8f8;
+      background: #e0e7ff;
+      color: #1a2a3a;
     }
 
     .role-select {
@@ -812,6 +847,12 @@ body.dark-mode label { color: var(--text-muted); }
         width: 100%;
       }
       .report-card { padding: 18px 14px; }
+      .stats {
+        flex-direction: column;
+      }
+      .stat-card {
+        min-width: auto;
+      }
     }
 
 /* ── DARK MODE OVERRIDES ── */
@@ -822,18 +863,18 @@ body.dark-mode .detail-card,
 body.dark-mode .report-card,
 body.dark-mode .analytics-section,
 body.dark-mode .tab-panel,
-body.dark-mode section { background: rgba(22, 30, 48, 0.97) !important; color: var(--text-primary); }
+body.dark-mode section { background: rgba(22, 30, 48, 0.97) !important; color: #e2e8f0; }
 body.dark-mode .chart-wrapper { background: rgba(22, 30, 48, 0.9) !important; }
-body.dark-mode .stat-card { background: var(--stat-card-bg); }
+body.dark-mode .stat-card { background: #1e293b; }
 body.dark-mode .report-title-group h2,
 body.dark-mode .report-title-group h3 { color: #60a5fa; }
-body.dark-mode label, body.dark-mode .report-header { color: var(--text-secondary); }
+body.dark-mode label, body.dark-mode .report-header { color: #94a3b8; }
 body.dark-mode input, body.dark-mode select {
-  background-color: #0f172a; border-color: #334155; color: var(--text-primary);
+  background-color: #0f172a; border-color: #334155; color: #f1f5f9;
 }
-body.dark-mode .tab-btn { background: #1e2535; color: var(--text-secondary); border-color: #334155; }
+body.dark-mode .tab-btn { background: #1e2535; color: #94a3b8; border-color: #334155; }
 body.dark-mode .tab-btn.active { background: #2b5fa8; color: white; }
-body.dark-mode .search-filter input { background: #0f172a; color: var(--text-primary); border-color: #334155; }
+body.dark-mode .search-filter input { background: #0f172a; color: #f1f5f9; border-color: #334155; }
 body.dark-mode .role-tag { background: #1e3a5f; color: #93c5fd; }
 body.dark-mode .badge-pending    { background: #3d2e00; color: #fcd34d; }
 body.dark-mode .badge-inprogress { background: #0c2340; color: #93c5fd; }
@@ -844,7 +885,81 @@ body.dark-mode .badge-admin      { background: #2d0a0e; color: #fca5a5; }
 body.dark-mode .priority-low     { background: #0a2e1a; color: #6ee7b7; }
 body.dark-mode .priority-medium  { background: #3d2e00; color: #fcd34d; }
 body.dark-mode .priority-high    { background: #2d0a0e; color: #fca5a5; }
-body.dark-mode .empty-state, body.dark-mode .empty-chart { color: var(--text-muted); }
+body.dark-mode .empty-state, body.dark-mode .empty-chart { color: #94a3b8; }
+
+/* Dark mode request list items */
+body.dark-mode .request-item {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(51, 65, 85, 0.5);
+}
+body.dark-mode .request-item:hover { background: rgba(51, 65, 85, 0.9); }
+body.dark-mode .request-item.selected { background: rgba(51, 65, 85, 0.95); border-left-color: #60a5fa; }
+body.dark-mode .request-id { background: rgba(96, 165, 250, 0.15); color: #93c5fd; }
+body.dark-mode .request-category { background: rgba(96, 165, 250, 0.15); color: #93c5fd; }
+body.dark-mode .request-desc { color: #e2e8f0 !important; }
+body.dark-mode .request-meta { border-top-color: rgba(51, 65, 85, 0.5); color: #94a3b8; }
+body.dark-mode .request-meta span { color: #94a3b8; }
+
+/* Dark mode for Manage Users table */
+body.dark-mode .users-section {
+  background: rgba(22, 30, 48, 0.97) !important;
+}
+body.dark-mode .users-table th {
+  background: #1e3a5f;
+  color: #f1f5f9;
+}
+body.dark-mode .users-table td {
+  color: #cbd5e1;
+  border-bottom-color: #334155;
+}
+body.dark-mode .users-table tr:hover td {
+  background: rgba(51, 65, 85, 0.6);
+  color: #f1f5f9;
+}
+body.dark-mode .users-section h2 {
+  color: #93c5fd;
+}
+body.dark-mode .users-section p {
+  color: #94a3b8 !important;
+}
+body.dark-mode .role-select {
+  background-color: #1e293b;
+  color: #e2e8f0;
+  border-color: #475569;
+}
+body.dark-mode .delete-user-btn {
+  background: #dc3545;
+  color: white;
+}
+body.dark-mode .delete-user-btn:hover {
+  background: #b02a37;
+}
+body.dark-mode .delete-user-btn:disabled {
+  background: #6c757d;
+  color: #94a3b8;
+}
+
+/* FIX: Dark mode request details panel text visibility */
+body.dark-mode .detail-card,
+body.dark-mode .detail-card h2,
+body.dark-mode .info-row,
+body.dark-mode .label,
+body.dark-mode .info-value,
+body.dark-mode .detail-card p,
+body.dark-mode .no-image,
+body.dark-mode .feedback-stars,
+body.dark-mode .controls select,
+body.dark-mode .controls button {
+  color: #e2e8f0 !important;
+  background-color: transparent;
+}
+body.dark-mode .detail-card { background: rgba(15, 23, 42, 0.8) !important; }
+body.dark-mode .detail-card h2 { border-bottom-color: #334155; color: #f1f5f9 !important; }
+body.dark-mode .info-value a { color: #93c5fd; }
+body.dark-mode .info-value a:hover { color: #60a5fa; }
+body.dark-mode .controls select { background-color: #1e293b; border-color: #475569; }
+body.dark-mode .controls button { background: #1e3a5f; color: #e2e8f0; border: none; }
+body.dark-mode .controls button:hover { background: #2b5fa8; }
   </style>
 </head>
 <body>
@@ -924,7 +1039,7 @@ body.dark-mode .empty-state, body.dark-mode .empty-chart { color: var(--text-mut
     </div>
   </div>
 
-  <!-- USERS TAB - RESTORED ORIGINAL STYLE -->
+  <!-- USERS TAB -->
   <div class="tab-panel" id="tab-users">
     <div class="users-section">
       <h2>Manage Users</h2>

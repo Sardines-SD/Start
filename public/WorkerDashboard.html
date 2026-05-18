@@ -261,7 +261,8 @@ body.dark-mode .badge-resolved   { background: #0a2e1a; color: #6ee7b7; }
       color: #2a3a4a;
     }
     tr:hover td {
-      background: #dde8f8;
+      background: #e0e7ff;
+      color: #1a2a3a;
     }
 
     /* Image styles */
@@ -345,11 +346,11 @@ body.dark-mode .badge-resolved   { background: #0a2e1a; color: #6ee7b7; }
     #pendingAcceptanceSection h2 { color: #b45309; }
 
 /* ── DARK MODE OVERRIDES ── */
-body.dark-mode section { background: rgba(22, 30, 48, 0.97); color: var(--text-primary); }
-body.dark-mode section h2, body.dark-mode .section-subtitle { color: var(--text-secondary); }
-body.dark-mode label { color: var(--text-secondary); }
+body.dark-mode section { background: rgba(22, 30, 48, 0.97); color: #e2e8f0; }
+body.dark-mode section h2, body.dark-mode .section-subtitle { color: #cbd5e1; }
+body.dark-mode label { color: #94a3b8; }
 body.dark-mode input, body.dark-mode select {
-  background-color: #0f172a; border-color: #334155; color: var(--text-primary);
+  background-color: #0f172a; border-color: #334155; color: #f1f5f9;
 }
 body.dark-mode .filter-bar { background: rgba(22, 30, 48, 0.97); border-color: #334155; }
 body.dark-mode .role-tag { background: #1e3a5f; color: #93c5fd; }
@@ -361,6 +362,19 @@ body.dark-mode #pendingAcceptanceSection {
 }
 body.dark-mode #pendingAcceptanceSection h2 { color: #fcd34d !important; }
 
+/* Dark mode table hover fix */
+body.dark-mode tr:hover td {
+  background: rgba(51, 65, 85, 0.6);
+  color: #f1f5f9;
+}
+body.dark-mode td {
+  color: #cbd5e1;
+  border-bottom-color: #334155;
+}
+body.dark-mode th {
+  background: #1e3a5f;
+  color: #f1f5f9;
+}
   </style>
 </head>
 <body>
