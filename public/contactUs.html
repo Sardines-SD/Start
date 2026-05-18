@@ -231,12 +231,42 @@
       }
     }
 
-/* ── DARK MODE OVERRIDES ── */
-body.dark-mode .contact-card { background: rgba(22, 30, 48, 0.97) !important; }
-body.dark-mode .contact-card h2 { color: #60a5fa; }
-body.dark-mode .contact-card p,
-body.dark-mode .info-item { color: var(--text-secondary); }
-body.dark-mode .contact-info { background: rgba(15, 25, 45, 0.8) !important; }
+    /* ── DARK MODE OVERRIDES ── */
+    body.dark-mode .contact-card {
+      background: rgba(22, 30, 48, 0.97) !important;
+    }
+    
+    body.dark-mode .contact-card h2,
+    body.dark-mode .contact-card h3 {
+      color: #60a5fa !important;
+    }
+    
+    body.dark-mode .contact-card p,
+    body.dark-mode .info-item p,
+    body.dark-mode .contact-card .info-item {
+      color: #cbd5e1 !important;
+    }
+    
+    body.dark-mode .info-item {
+      background: rgba(30, 41, 59, 0.8) !important;
+    }
+    
+    body.dark-mode .info-item h3 {
+      color: #93c5fd !important;
+    }
+    
+    body.dark-mode .back-btn {
+      background: linear-gradient(135deg, #1e3a5f, #0f172a);
+      color: #e2e8f0;
+    }
+    
+    body.dark-mode .back-btn:hover {
+      background: linear-gradient(135deg, #2b5fa8, #1e3a5f);
+    }
+    
+    body.dark-mode footer p {
+      color: #94a3b8;
+    }
   </style>
 </head>
 <body>

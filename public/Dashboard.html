@@ -309,7 +309,7 @@ body.dark-mode #starLabel { color: var(--text-primary) !important; }
     }
 
     tr:hover td {
-      background: #dde8f8;
+      background: #e0e7ff;
     }
 
     .no-requests td {
@@ -696,29 +696,108 @@ body.dark-mode #starLabel { color: var(--text-primary) !important; }
 body.dark-mode section,
 body.dark-mode .feedback-modal {
   background: rgba(22, 30, 48, 0.97);
-  color: var(--text-primary);
+  color: #e2e8f0;
 }
 body.dark-mode section h2,
 body.dark-mode section h3,
 body.dark-mode section p,
-body.dark-mode .map-hint { color: var(--text-secondary); }
-body.dark-mode label { color: var(--text-secondary); }
+body.dark-mode .map-hint { color: #cbd5e1; }
+body.dark-mode label { color: #94a3b8; }
 body.dark-mode input, body.dark-mode textarea, body.dark-mode select {
   background-color: #0f172a;
   border-color: #334155;
-  color: var(--text-primary);
+  color: #f1f5f9;
 }
-body.dark-mode .search-box input { background: #0f172a; color: var(--text-primary); border-color: #334155; }
-body.dark-mode .no-requests { color: var(--text-muted); }
+body.dark-mode .search-box input { background: #0f172a; color: #f1f5f9; border-color: #334155; }
+body.dark-mode .no-requests { color: #94a3b8; }
 body.dark-mode .location-tag { background: #1e3a5f; color: #93c5fd; }
-body.dark-mode output, body.dark-mode .feedback-subtitle { background: #1e3a5f; color: var(--text-primary); }
 body.dark-mode .badge-pending  { background: #3d2e00; color: #fcd34d; }
 body.dark-mode .badge-progress { background: #0c2340; color: #93c5fd; }
 body.dark-mode .badge-resolved { background: #0a2e1a; color: #6ee7b7; }
 body.dark-mode .feedback-modal-overlay { background: rgba(0,0,0,0.75); }
 body.dark-mode .star-row button { color: #94a3b8; }
-body.dark-mode .feedback-thankyou p { color: var(--text-secondary); }
+body.dark-mode .feedback-thankyou p { color: #cbd5e1; }
 
+/* Fix output/feedback text visibility - DARK BACKGROUND */
+body.dark-mode output {
+  background: #0f172a !important;
+  color: #f1f5f9 !important;
+  border-left-color: #60a5fa;
+}
+
+body.dark-mode #requestFeedback {
+  background: #0f172a !important;
+  color: #f1f5f9 !important;
+}
+
+/* Dark mode table fixes */
+body.dark-mode table {
+  background-color: transparent;
+}
+body.dark-mode th {
+  background: #1e3a5f;
+  color: #f1f5f9;
+}
+body.dark-mode td {
+  color: #cbd5e1;
+  border-bottom-color: #334155;
+}
+body.dark-mode tr:hover td {
+  background: rgba(51, 65, 85, 0.6);
+}
+body.dark-mode .proof-image {
+  border: 1px solid #334155;
+}
+body.dark-mode .btn-delete {
+  background: #dc3545;
+  color: white;
+}
+body.dark-mode .btn-delete:hover {
+  background: #b02a37;
+}
+body.dark-mode a {
+  color: #93c5fd;
+}
+body.dark-mode a:hover {
+  color: #60a5fa;
+}
+body.dark-mode .feedback-given {
+  background: linear-gradient(135deg, #1e3a5f, #0f172a);
+  color: #93c5fd;
+  border-color: #334155;
+}
+
+/* Dark mode duplicate modal fixes */
+body.dark-mode #duplicateModal .feedback-modal {
+  background: #1e293b !important;
+}
+body.dark-mode #duplicateModal .feedback-modal h3 {
+  color: #fcd34d !important;
+}
+body.dark-mode #duplicateModal .feedback-modal .feedback-subtitle {
+  color: #94a3b8 !important;
+}
+body.dark-mode #duplicateList div {
+  background: #0f172a !important;
+  color: #cbd5e1 !important;
+}
+body.dark-mode #duplicateList div strong {
+  color: #93c5fd !important;
+}
+body.dark-mode .btn-feedback-cancel {
+  background: #334155;
+  color: #e2e8f0;
+}
+body.dark-mode .btn-feedback-cancel:hover {
+  background: #475569;
+}
+body.dark-mode .btn-feedback-submit {
+  background: #1e3a5f;
+  color: white;
+}
+body.dark-mode .btn-feedback-submit:hover {
+  background: #2b5fa8;
+}
   </style>
 </head>
 <body>

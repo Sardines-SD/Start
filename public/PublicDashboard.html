@@ -24,6 +24,19 @@
 </script>
 <style>
   html.dark-mode-pending body { background-color: #0f172a; }
+  
+  /* Dark mode fix for checkbox label */
+  body.dark-mode .stats-grid .stat-card {
+    background: #1e293b;
+  }
+  
+  body.dark-mode label span {
+    color: #e2e8f0;
+  }
+  
+  body.dark-mode label {
+    background: rgba(30, 41, 59, 0.95) !important;
+  }
 </style>
 
 
@@ -66,6 +79,14 @@
     </div>
   </div>
 
+  <!-- Filter: Hide Resolved Requests on Map -->
+  <div style="display: flex; justify-content: flex-end; align-items: center; margin: 15px 0 10px 0; flex-wrap: wrap; gap: 10px;">
+    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; background: rgba(255,255,255,0.9); padding: 8px 15px; border-radius: 20px; font-size: 14px; font-weight: 500;">
+      <input type="checkbox" id="hideResolvedCheckbox" style="width: 18px; height: 18px; cursor: pointer;">
+      <span> Hide resolved requests on map</span>
+    </label>
+  </div>
+
   <!-- Public Map -->
   <div id="publicMap"></div>
 
@@ -85,6 +106,15 @@
 
       <tbody id="publicRequestsTable"></tbody>
     </table>
+  </div>
+  
+  <!-- Table controls - below the table -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; flex-wrap: wrap; gap: 10px;">
+    <p id="tableInfo" style="font-size: 13px; color: #6b7280; margin: 0;"></p>
+    <div style="display: flex; gap: 10px;">
+      <button id="showLatestBtn" class="public-dashboard-btn" style="padding: 8px 20px; font-size: 14px;"> Show Latest 5</button>
+      <button id="showAllBtn" class="public-dashboard-btn" style="padding: 8px 20px; font-size: 14px; background: #17a2b8;"> Show All</button>
+    </div>
   </div>
 
 </section>
