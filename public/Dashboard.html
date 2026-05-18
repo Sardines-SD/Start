@@ -877,6 +877,23 @@ body.dark-mode .feedback-thankyou p { color: var(--text-secondary); }
     </div>
   </div>
 </div>
+
+<!-- DUPLICATE REQUEST WARNING MODAL (US3) -->
+<div id="duplicateModal" class="feedback-modal-overlay" role="dialog" aria-modal="true">
+  <div class="feedback-modal">
+    <button class="feedback-close-btn" onclick="closeDuplicateModal()" aria-label="Close">&times;</button>
+    <div id="duplicateFormSection">
+      <h3>⚠️ Possible Duplicate Request</h3>
+      <p class="feedback-subtitle" id="duplicateMessage">We found a similar request nearby.</p>
+      <div id="duplicateList" style="max-height:200px; overflow-y:auto; margin:15px 0;"></div>
+      <div class="feedback-btn-row">
+        <button class="btn-feedback-cancel" onclick="closeDuplicateModal()">Cancel</button>
+        <button class="btn-feedback-submit" id="submitAnywayBtn">Submit Anyway</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="feedbackToast" class="toast">✅ Feedback saved!</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -917,3 +934,6 @@ body.dark-mode .feedback-thankyou p { color: var(--text-secondary); }
     } catch(e) { console.warn('Could not save dark mode preference', e); }
   });
 </script>
+
+</body>
+</html>

@@ -23,6 +23,19 @@ let issueMap    = null;
 let issueMarker = null;
 let activeFeedbackId = null;
 let selectedRating   = 0;
+
+// US3: Flag to bypass duplicate check when user clicks "Submit Anyway"
+let bypassDuplicateCheck = false;
+
+// STAR LABELS for feedback modal
+const STAR_LABELS = {
+  1: "😞 Poor - Very dissatisfied",
+  2: "😐 Fair - Below expectations",
+  3: "🙂 Good - Satisfactory",
+  4: "😊 Very Good - Above expectations",
+  5: "🌟 Excellent - Exceeded expectations"
+};
+
 //popup message for when an image is too large
 
 function showErrorPopup(message) {
@@ -322,6 +335,96 @@ document.addEventListener("keydown", function(e) {
   }
 });
 
+//DUPLICATE REQUEST DETECTION FUNCTIONS
+async function checkForDuplicates(category, latitude, longitude) {
+  try {
+    const token = await getFreshToken();
+    const res = await fetch("/api/requests/check-duplicate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        category: category,
+        latitude: parseFloat(latitude),
+        longitude: parseFloat(longitude)
+      })
+    });
+    
+    if (!res.ok) {
+      console.warn("Duplicate check failed, proceeding with submission");
+      return { hasDuplicates: false };
+    }
+    
+    return await res.json();
+  } catch (error) {
+    console.error("Duplicate check error:", error);
+    return { hasDuplicates: false };
+  }
+}
+
+function showDuplicateModal(duplicates) {
+  const modal = document.getElementById("duplicateModal");
+  const duplicateList = document.getElementById("duplicateList");
+  const duplicateMessage = document.getElementById("duplicateMessage");
+  
+  if (!modal) return;
+  
+  duplicateMessage.textContent = `We found ${duplicates.length} similar request(s) nearby. Do you still want to submit?`;
+  
+  duplicateList.innerHTML = duplicates.map(d => `
+    <div style="background:#f8f9fa; padding:10px; margin-bottom:8px; border-radius:8px; border-left:4px solid #f59e0b;">
+      <div><strong>📅 ${new Date(d.createdAt).toLocaleDateString()}</strong></div>
+      <div><strong>📍 ${d.distance}m away</strong></div>
+      <div><strong>Status:</strong> ${d.status}</div>
+      <div><strong>Description:</strong> ${escapeHtml(d.description.substring(0, 80))}${d.description.length > 80 ? '...' : ''}</div>
+    </div>
+  `).join("");
+  
+  modal.classList.add("open");
+}
+
+window.closeDuplicateModal = function() {
+  const modal = document.getElementById("duplicateModal");
+  if (modal) {
+    modal.classList.remove("open");
+  }
+};
+
+// US3: Set up the "Submit Anyway" button - simply trigger form submission again with bypass flag
+function setupSubmitAnywayButton() {
+  const submitAnywayBtn = document.getElementById("submitAnywayBtn");
+  if (submitAnywayBtn) {
+    // Remove any existing listeners
+    const newBtn = submitAnywayBtn.cloneNode(true);
+    submitAnywayBtn.parentNode.replaceChild(newBtn, submitAnywayBtn);
+    
+    newBtn.addEventListener("click", async () => {
+      console.log("Submit Anyway clicked - bypassing duplicate check");
+      // Set flag to bypass duplicate check
+      bypassDuplicateCheck = true;
+      // Close the modal
+      closeDuplicateModal();
+      // Trigger the form submission again (will skip duplicate check because flag is true)
+      const form = document.getElementById("serviceRequestForm");
+      const submitEvent = new Event("submit", { bubbles: true, cancelable: true });
+      form.dispatchEvent(submitEvent);
+      // Reset flag after a short delay (give time for submission to process)
+      setTimeout(() => {
+        bypassDuplicateCheck = false;
+      }, 1000);
+    });
+  }
+}
+
+// Call this when the page loads
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', setupSubmitAnywayButton);
+} else {
+  setupSubmitAnywayButton();
+}
+
 document.getElementById("serviceRequestForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const category    = document.getElementById("requestCategory").value;
@@ -339,22 +442,38 @@ document.getElementById("serviceRequestForm").addEventListener("submit", async (
     return;
   }
 
+  const latitude  = document.getElementById('issueLatitude').value;
+  const longitude = document.getElementById('issueLongitude').value;
+
+  if (!latitude || !longitude) {
+    feedback.textContent = 'Please pin the location of the issue on the map.';
+    feedback.style.background = '#f8d7da';
+    feedback.style.borderLeftColor = '#dc3545';
+    document.getElementById('issueMap').scrollIntoView({ behavior: 'smooth' });
+    return;
+  }
+
+  //Skip duplicate check if user clicked "Submit Anyway"
+  if (!bypassDuplicateCheck) {
+    feedback.textContent = "Checking for duplicates...";
+    feedback.style.background = "#e9f2ff";
+    feedback.style.borderLeftColor = "#2b5fa8";
+    
+    const duplicateCheck = await checkForDuplicates(category, latitude, longitude);
+    
+    if (duplicateCheck.hasDuplicates && duplicateCheck.duplicates.length > 0) {
+      // Show warning modal with duplicate list
+      showDuplicateModal(duplicateCheck.duplicates);
+      feedback.textContent = "";
+      return;
+    }
+  } else {
+    console.log("Bypassing duplicate check (Submit Anyway clicked)");
+  }
+
   feedback.textContent = "Submitting...";
   feedback.style.background = "#e9f2ff";
   feedback.style.borderLeftColor = "#2b5fa8";
-
-
-const latitude  = document.getElementById('issueLatitude').value;
-const longitude = document.getElementById('issueLongitude').value;
-
-if (!latitude || !longitude) {
-  feedback.textContent = 'Please pin the location of the issue on the map.';
-  feedback.style.background = '#f8d7da';
-  feedback.style.borderLeftColor = '#dc3545';
-  document.getElementById('issueMap').scrollIntoView({ behavior: 'smooth' });
-  return;
-}
-
 
   try {
     const token = await getFreshToken();
@@ -449,7 +568,7 @@ if (!latitude || !longitude) {
 
 async function loadRequests() {
   const table = document.getElementById("requestsTableBody");
-  table.innerHTML = "<tr><td colspan='9'>Loading...";
+  table.innerHTML = "<table><td colspan='9'>Loading...";
 
   try {
     const token = await getFreshToken();
@@ -692,6 +811,11 @@ document.getElementById('feedbackModalOverlay')?.addEventListener('click', funct
   if (e.target === this) closeFeedbackModal();
 });
 
+// Close duplicate modal on overlay click
+document.getElementById('duplicateModal')?.addEventListener('click', function(e) {
+  if (e.target === this) closeDuplicateModal();
+});
+
 function getStatusClass(status) {
   const statusLower = (status || "").toLowerCase();
   if (statusLower === "pending") return "pending";
@@ -699,9 +823,6 @@ function getStatusClass(status) {
   if (statusLower === "resolved" || statusLower === "completed") return "resolved";
   return "pending";
 }
-
-
-
 
 function escapeHtml(str) {
   if (!str) return "";
