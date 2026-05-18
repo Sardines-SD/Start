@@ -8,6 +8,7 @@ import {
   doc,
   getDoc,
   updateDoc,
+  setDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { firebaseConfig } from "./firebaseConfig.js";
 
@@ -87,11 +88,28 @@ document.getElementById("profileForm").addEventListener("submit", async (e) => {
   
   try {
     const userRef = doc(db, "users", currentUser.uid);
-    await updateDoc(userRef, {
-      username: username || currentUser.email.split('@')[0],
-      ward: wardNumber,
-      updatedAt: new Date()
-    });
+    const userSnap = await getDoc(userRef);
+    
+    if (!userSnap.exists()) {
+      // Create document for Google user that doesn't have one
+      await setDoc(userRef, {
+        email: currentUser.email,
+        username: username || currentUser.email.split('@')[0],
+        ward: wardNumber,
+        role: "user",
+        isEmailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        provider: "google"
+      });
+    } else {
+      // Update existing document
+      await updateDoc(userRef, {
+        username: username || currentUser.email.split('@')[0],
+        ward: wardNumber,
+        updatedAt: new Date()
+      });
+    }
     
     feedback.textContent = "✅ Profile updated successfully!";
     feedback.style.background = "#d4edda";
