@@ -99,7 +99,7 @@ function getPriorityBadge(priority) {
 
 async function loadAllRequests() {
   const table = document.getElementById("requestsTable");
-  table.innerHTML = "<tr><td colspan='12'>Loading...";
+  table.innerHTML = "<tr><td colspan='13'>Loading...";
 
   try {
     const token = await getFreshToken();
@@ -112,7 +112,7 @@ async function loadAllRequests() {
     allRequests = allData.filter(req => req.assignedTo === currentWorkerUid);
     renderTable(allRequests);
   } catch {
-    table.innerHTML = "<tr><td colspan='12'>Failed to load requests.";
+    table.innerHTML = "<tr><td colspan='13'>Failed to load requests.";
   }
 }
 
@@ -135,6 +135,7 @@ function buildRow(req, showClaimBtn) {
   const priorityBadge  = getPriorityBadge(req.priority);
   const assignedByName = req.assignedToName || 'Admin';
 
+  const dueDateCell = `<td class="due-date-cell">${escapeHtml(req.dueDate || '-')}</td>`;
   const actionCell = showClaimBtn
     ? `<td class="update-cell">
         <button class="btn-claim" data-id="${escapeHtml(req.firestoreId)}" onclick="claimRequest(this)">
@@ -165,6 +166,7 @@ function buildRow(req, showClaimBtn) {
       <td class="ward-cell">${req.ward || '-'}</td>
       <td class="municipality-cell">${req.municipality || '-'}</td>
       <td class="date-cell">${escapeHtml(req.createdAt ?? "-")}</td>
+      ${dueDateCell}
       <td class="status-cell"><span class="badge badge-${statusClass}">${escapeHtml(req.status)}</span></td>
       <td class="proof-cell">${imageHtml}</td>
       ${actionCell}
@@ -188,7 +190,7 @@ function renderPendingTable(data) {
 function renderActiveTable(data) {
   const table = document.getElementById("requestsTable");
   if (!data.length) {
-    table.innerHTML = "<tr><td colspan='12'>No active requests yet.";
+    table.innerHTML = "<tr><td colspan='13'>No active requests yet.";
     return;
   }
   table.innerHTML = data.map(r => buildRow(r, false)).join("");

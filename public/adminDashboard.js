@@ -172,6 +172,7 @@ function renderRequestList() {
           <span>👤 ${escapeHtml(req.userEmail?.split('@')[0] || '-')}</span>
           <span class="badge ${statusClass}">${escapeHtml(req.status)}</span>
           <span>📅 ${escapeHtml(req.createdAt || '-')}</span>
+          <span>⏳ Due: ${escapeHtml(req.dueDate || 'Not set')}</span>
         </div>
       </div>
     `;
@@ -247,6 +248,13 @@ async function selectRequest(firestoreId) {
       <div class="label">Location:</div>
       <div class="info-value">${request.latitude && request.longitude ? `<a href="https://maps.google.com/?q=${request.latitude},${request.longitude}" target="_blank">📍 View on Google Maps</a>` : 'Not available'}</div>
     </div>
+
+    <div class="info-row">
+      <div class="label">Due Date:</div>
+      <div class="info-value">
+        <input type="date" id="dueDateInput-${firestoreId}" value="${escapeHtml(request.dueDate || '')}" style="width:100%;padding:8px;border-radius:6px;border:1px solid #d1d5db" />
+      </div>
+    </div>
     
     <div class="info-row">
       <div class="label">Proof Image:</div>
@@ -284,10 +292,12 @@ window.saveRequestChanges = async function(firestoreId) {
   const statusSelect = document.getElementById(`statusSelect-${firestoreId}`);
   const prioritySelect = document.getElementById(`prioritySelect-${firestoreId}`);
   const workerSelect = document.getElementById(`workerSelect-${firestoreId}`);
+  const dueDateInput = document.getElementById(`dueDateInput-${firestoreId}`);
   
   const newStatus = statusSelect ? statusSelect.value : null;
   const newPriority = prioritySelect ? prioritySelect.value : null;
   const workerUid = workerSelect ? workerSelect.value : null;
+  const newDueDate = dueDateInput ? dueDateInput.value : null;
   
   try {
     const token = await getFreshToken();
@@ -301,13 +311,18 @@ window.saveRequestChanges = async function(firestoreId) {
       if (!priorityRes.ok) throw new Error("Priority update failed");
     }
     
-    if (newStatus) {
+    if (newStatus || (newDueDate && newDueDate !== "")) {
+      const payload = { status: newStatus };
+      if (newDueDate && newDueDate !== "") payload.dueDate = newDueDate;
       const statusRes = await fetch(`/api/requests/${firestoreId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify(payload),
       });
-      if (!statusRes.ok) throw new Error("Status update failed");
+      if (!statusRes.ok) {
+        const err = await statusRes.json().catch(() => ({}));
+        throw new Error(err.error || "Status update failed");
+      }
     }
     
     if (workerUid) {
