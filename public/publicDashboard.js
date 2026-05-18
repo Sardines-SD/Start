@@ -95,10 +95,21 @@ function renderMarkers(requests) {
   requestsToShow.forEach(req => {
     if (!req.latitude || !req.longitude) return;
 
-    // Choose marker color based on status
-    let markerColor = "#3b82f6"; // default blue for in-progress
-    if (req.status === "pending") markerColor = "#f59e0b"; // orange
-    if (req.status === "resolved") markerColor = "#10b981"; // green
+    // Choose marker color
+    let markerColor = "#3b82f6"; // blue = in-progress
+
+    if (req.status === "pending") {
+    markerColor = "#f59e0b"; // orange
+    }
+
+    if (req.status === "resolved") {
+      markerColor = "#10b981"; // green
+    }
+
+    // Escalated requests override everything and become red
+    if (req.escalated === true) {
+      markerColor = "#ef4444";
+    }
 
     // Create custom marker icon with color
     const customIcon = L.divIcon({
@@ -114,7 +125,8 @@ function renderMarkers(requests) {
       Status: <span class="badge badge-${getStatusClass(req.status)}">${escapeHtml(req.status || "pending")}</span><br>
       Ward: ${escapeHtml(req.ward || "Unknown")}<br>
       Municipality: ${escapeHtml(req.municipality || "Unknown")}<br>
-      Date: ${escapeHtml(req.createdAt || "-")}
+      Date: ${escapeHtml(req.createdAt || "-")}<br>
+      ${req.escalated ? "⚠ <strong>Escalated Request</strong>" : ""}
     `);
 
     allMarkers.push(marker);
