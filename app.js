@@ -548,7 +548,7 @@ function getDueDateStatus(report, nowMs = Date.now()) {
  * @param {object} report
  * @param {number} [nowMs]
  */
-function isDueDateApproaching(report, nowMs = Date.now()) {
+/*function isDueDateApproaching(report, nowMs = Date.now()) {
   if (!report.dueDate)              return false;
   if (report.status === 'resolved') return false;
   const ts = typeof report.dueDate === 'number'
@@ -557,7 +557,7 @@ function isDueDateApproaching(report, nowMs = Date.now()) {
   if (isNaN(ts)) return false;
   if (ts < nowMs) return false; // already overdue
   return (ts - nowMs) <= DUE_DATE_REMINDER_HOURS * 3_600_000;
-}
+}*/
 
 /**
  * Returns true when the requesting user's role is allowed to set due dates.
@@ -596,7 +596,7 @@ function buildDueDatePayload(dueDate, assignedByUid) {
  * @param {object} report
  * @param {number} [nowMs]
  */
-function formatDueDateDisplay(report, nowMs = Date.now()) {
+/*function formatDueDateDisplay(report, nowMs = Date.now()) {
   if (!report.dueDate) return 'No due date';
   const ts = typeof report.dueDate === 'number'
     ? report.dueDate
@@ -623,7 +623,7 @@ function formatDueDateDisplay(report, nowMs = Date.now()) {
   const d = new Date(ts);
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return `Due ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-}
+}*/
 
 // ── Exports ───────────────────────────────────────────────────────────────────
 module.exports = {
