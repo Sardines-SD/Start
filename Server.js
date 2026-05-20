@@ -9,6 +9,8 @@ const cors    = require("cors");
 const admin   = require("firebase-admin");
 const nodemailer = require("nodemailer");
 
+const { canEscalateRequest, validateEscalationReason, buildEscalationPayload } = require("./app.js");
+
 // For Azure: Use environment variable
 if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
   console.error("ERROR: FIREBASE_SERVICE_ACCOUNT environment variable is not set");
@@ -615,7 +617,7 @@ app.get("/api/public/requests", async (req, res) => {
         latitude: data.latitude || null,
         longitude: data.longitude || null,
         createdAt: data.createdAt?.toDate().toLocaleDateString("en-ZA") ?? "",
-  
+        escalated: data.escalated || false,
       };
     });
 
@@ -755,6 +757,40 @@ app.patch("/api/requests/:id", requireAuth, async (req, res) => {
   }
 });
 
+// ── ESCALATE REQUEST (owner only) ─────────────────────────────────────────────
+app.post("/api/requests/:id/escalate", requireAuth, async (req, res) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+
+  try {
+    const docRef  = db.collection("requests").doc(id);
+    const docSnap = await docRef.get();
+
+    if (!docSnap.exists) {
+      return res.status(404).json({ error: "Request not found" });
+    }
+
+    const report = docSnap.data();
+
+    const canEscalate = canEscalateRequest(report, req.user.uid);
+    if (!canEscalate.valid) {
+      return res.status(403).json({ error: canEscalate.error });
+    }
+
+    const reasonValidation = validateEscalationReason(reason);
+    if (!reasonValidation.valid) {
+      return res.status(400).json({ error: reasonValidation.error });
+    }
+
+    const payload = buildEscalationPayload(reason);
+    await docRef.update(payload);
+
+    res.json({ message: "Request escalated successfully" });
+  } catch (err) {
+    console.error("Error escalating request:", err);
+    res.status(500).json({ error: "Failed to escalate request" });
+  }
+});
 // ── DELETE REQUEST (owner or admin only) ──────────────────────────────────────
 app.delete("/api/requests/:id", requireAuth, async (req, res) => {
   const { id } = req.params;

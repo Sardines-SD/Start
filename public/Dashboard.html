@@ -885,6 +885,7 @@ body.dark-mode .btn-feedback-submit:hover {
             <th>Description</th>
             <th>Ward</th>
             <th>Municipality</th>
+            <th>Escalate</th>
 	    <th>Address</th>
 	    <th>Location</th>
             <th>Status</th>
@@ -969,6 +970,20 @@ body.dark-mode .btn-feedback-submit:hover {
         <button class="btn-feedback-cancel" onclick="closeDuplicateModal()">Cancel</button>
         <button class="btn-feedback-submit" id="submitAnywayBtn">Submit Anyway</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Escalation Modal -->
+<div id="escalateModal" class="feedback-modal-overlay" role="dialog" aria-modal="true">
+  <div class="feedback-modal">
+    <h3>⚠️ Escalate Request</h3>
+    <p class="feedback-subtitle">Escalating will flag this issue as urgent on the public map.</p>
+    <textarea id="escalateReason" placeholder="Optional: reason for escalation (max 200 chars)" maxlength="200" rows="3" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ccc;font-size:14px;resize:vertical;"></textarea>
+    <div id="escalateError" style="color:#dc3545;font-size:0.85rem;margin:8px 0;display:none;"></div>
+    <div style="display:flex;gap:10px;margin-top:12px;">
+      <button class="btn-feedback-submit" onclick="submitEscalation()">Escalate</button>
+      <button class="btn-delete" onclick="closeEscalateModal()">Cancel</button>
     </div>
   </div>
 </div>

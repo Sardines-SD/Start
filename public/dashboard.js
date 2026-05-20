@@ -634,6 +634,16 @@ table.innerHTML = data.map(r => {
         <button class="btn-delete" onclick="deleteReport('${escapeHtml(r.firestoreId)}', this)">
           Delete
         </button>
+
+      <td>
+        ${r.escalated
+          ? '<span style="color:#ef4444;font-weight:bold;">⚠ Escalated</span>'
+          : r.status === 'resolved'
+            ? '—'
+            : `<button class="btn-rate" onclick="openEscalateModal('${escapeHtml(r.firestoreId)}')">Escalate ⚠️</button>`
+        }
+      </td>
+
       </td>
     </tr>
   `;
@@ -833,3 +843,55 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
+
+// ── ESCALATION MODAL ──────────────────────────────────────────────────────────
+let activeEscalateId = null;
+
+window.openEscalateModal = function(firestoreId) {
+  activeEscalateId = firestoreId;
+  document.getElementById('escalateReason').value = '';
+  document.getElementById('escalateError').style.display = 'none';
+  document.getElementById('escalateModal').classList.add('open');
+};
+
+window.closeEscalateModal = function() {
+  document.getElementById('escalateModal').classList.remove('open');
+  activeEscalateId = null;
+};
+
+window.submitEscalation = async function() {
+  const reason  = document.getElementById('escalateReason').value.trim();
+  const errEl   = document.getElementById('escalateError');
+  errEl.style.display = 'none';
+
+  try {
+    const token = await getFreshToken();
+    const res   = await fetch(`/api/requests/${activeEscalateId}/escalate`, {
+      method:  'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ reason }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      errEl.textContent   = err.error ?? 'Failed to escalate.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    closeEscalateModal();
+    showToast('⚠️ Request escalated successfully!');
+    loadRequests();
+  } catch (err) {
+    errEl.textContent   = 'Network error. Please try again.';
+    errEl.style.display = 'block';
+  }
+};
+
+// Close escalate modal on overlay click
+document.getElementById('escalateModal')?.addEventListener('click', function(e) {
+  if (e.target === this) closeEscalateModal();
+});
