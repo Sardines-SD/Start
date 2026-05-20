@@ -46,6 +46,15 @@ const {
   getThemeClass,
   DUPLICATE_RADIUS_KM,
   DUPLICATE_TIME_WINDOW_H,
+  // Sprint 4 US4 — Due Dates
+  isValidDueDate,
+  isDueDateOverdue,
+  getDueDateStatus,
+  isDueDateApproaching,
+  canAssignDueDate,
+  buildDueDatePayload,
+  formatDueDateDisplay,
+  DUE_DATE_REMINDER_HOURS,
 } = require('../app');
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -924,5 +933,341 @@ describe('Sprint 4 — Duplicate detection constants', () => {
   });
   test('DUPLICATE_TIME_WINDOW_H is 24 hours', () => {
     expect(DUPLICATE_TIME_WINDOW_H).toBe(24);
+  });
+});
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 4 US4 — Assign Due Dates to Service Requests
+// Target: comprehensive equivalence classes + boundary cases on every function
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const ONE_HOUR_MS = 3_600_000;
+const ONE_DAY_MS  = 24 * ONE_HOUR_MS;
+const NOW         = Date.now();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// isValidDueDate  — equivalence classes and boundary cases
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Sprint 4 US4 — isValidDueDate: valid inputs', () => {
+
+  test('ISO date string for tomorrow is valid', () => {
+    const tomorrow = new Date(NOW + ONE_DAY_MS).toISOString().slice(0, 10);
+    expect(isValidDueDate(tomorrow, NOW)).toBe(true);
+  });
+
+  test('ms timestamp for tomorrow is valid', () => {
+    expect(isValidDueDate(NOW + ONE_DAY_MS, NOW)).toBe(true);
+  });
+
+  test('ms timestamp exactly 1 year from now is valid', () => {
+    expect(isValidDueDate(NOW + 365 * ONE_DAY_MS, NOW)).toBe(true);
+  });
+
+  test('ISO date string exactly 2 years from now is valid (upper boundary)', () => {
+    const twoYears = NOW + 2 * 365 * ONE_DAY_MS;
+    expect(isValidDueDate(twoYears, NOW)).toBe(true);
+  });
+
+  test('ms timestamp for today (now) is valid', () => {
+    // A due date of right now is acceptable — not in the past
+    expect(isValidDueDate(NOW, NOW)).toBe(true);
+  });
+});
+
+describe('Sprint 4 US4 — isValidDueDate: invalid inputs (equivalence classes)', () => {
+
+  test('null is invalid', () => {
+    expect(isValidDueDate(null, NOW)).toBe(false);
+  });
+
+  test('undefined is invalid', () => {
+    expect(isValidDueDate(undefined, NOW)).toBe(false);
+  });
+
+  test('empty string is invalid', () => {
+    expect(isValidDueDate('', NOW)).toBe(false);
+  });
+
+  test('non-date string is invalid', () => {
+    expect(isValidDueDate('not-a-date', NOW)).toBe(false);
+  });
+
+  test('zero timestamp is invalid', () => {
+    expect(isValidDueDate(0, NOW)).toBe(false);
+  });
+
+  test('negative timestamp is invalid', () => {
+    expect(isValidDueDate(-1000, NOW)).toBe(false);
+  });
+
+  test('timestamp more than 2 years in the future is invalid (beyond upper boundary)', () => {
+    const tooFar = NOW + 2 * 365 * ONE_DAY_MS + ONE_DAY_MS;
+    expect(isValidDueDate(tooFar, NOW)).toBe(false);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// isDueDateOverdue — equivalence classes and boundary cases
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Sprint 4 US4 — isDueDateOverdue: overdue detection', () => {
+
+  test('past due date on pending request is overdue', () => {
+    const r = { dueDate: NOW - ONE_DAY_MS, status: 'pending' };
+    expect(isDueDateOverdue(r, NOW)).toBe(true);
+  });
+
+  test('past due date on in-progress request is overdue', () => {
+    const r = { dueDate: NOW - ONE_HOUR_MS, status: 'in-progress' };
+    expect(isDueDateOverdue(r, NOW)).toBe(true);
+  });
+
+  test('future due date is NOT overdue', () => {
+    const r = { dueDate: NOW + ONE_DAY_MS, status: 'pending' };
+    expect(isDueDateOverdue(r, NOW)).toBe(false);
+  });
+
+  test('due date exactly at now is NOT overdue (boundary — not yet past)', () => {
+    const r = { dueDate: NOW, status: 'pending' };
+    expect(isDueDateOverdue(r, NOW)).toBe(false);
+  });
+
+  test('one ms before now IS overdue (boundary — just past)', () => {
+    const r = { dueDate: NOW - 1, status: 'pending' };
+    expect(isDueDateOverdue(r, NOW)).toBe(true);
+  });
+
+  test('resolved request with past due date is NOT overdue', () => {
+    const r = { dueDate: NOW - ONE_DAY_MS, status: 'resolved' };
+    expect(isDueDateOverdue(r, NOW)).toBe(false);
+  });
+
+  test('request with no dueDate is NOT overdue', () => {
+    expect(isDueDateOverdue({ status: 'pending' }, NOW)).toBe(false);
+  });
+
+  test('request with null dueDate is NOT overdue', () => {
+    expect(isDueDateOverdue({ dueDate: null, status: 'pending' }, NOW)).toBe(false);
+  });
+
+  test('request with invalid date string is NOT overdue', () => {
+    expect(isDueDateOverdue({ dueDate: 'bad-date', status: 'pending' }, NOW)).toBe(false);
+  });
+
+  test('ISO date string in the past is overdue', () => {
+    const yesterday = new Date(NOW - ONE_DAY_MS).toISOString().slice(0, 10);
+    expect(isDueDateOverdue({ dueDate: yesterday, status: 'pending' }, NOW)).toBe(true);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// isDueDateApproaching — reminder window boundary cases
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Sprint 4 US4 — isDueDateApproaching: reminder window', () => {
+
+  test('DUE_DATE_REMINDER_HOURS constant is 24', () => {
+    expect(DUE_DATE_REMINDER_HOURS).toBe(24);
+  });
+
+  test('due in 12 hours is approaching', () => {
+    const r = { dueDate: NOW + 12 * ONE_HOUR_MS, status: 'pending' };
+    expect(isDueDateApproaching(r, NOW)).toBe(true);
+  });
+
+  test('due in exactly 24 hours is approaching (at boundary)', () => {
+    const r = { dueDate: NOW + 24 * ONE_HOUR_MS, status: 'pending' };
+    expect(isDueDateApproaching(r, NOW)).toBe(true);
+  });
+
+  test('due in 25 hours is NOT approaching (just outside boundary)', () => {
+    const r = { dueDate: NOW + 25 * ONE_HOUR_MS, status: 'pending' };
+    expect(isDueDateApproaching(r, NOW)).toBe(false);
+  });
+
+  test('due in 48 hours is NOT approaching', () => {
+    const r = { dueDate: NOW + 48 * ONE_HOUR_MS, status: 'pending' };
+    expect(isDueDateApproaching(r, NOW)).toBe(false);
+  });
+
+  test('already overdue request is NOT approaching', () => {
+    const r = { dueDate: NOW - ONE_HOUR_MS, status: 'pending' };
+    expect(isDueDateApproaching(r, NOW)).toBe(false);
+  });
+
+  test('resolved request is NOT approaching even if due soon', () => {
+    const r = { dueDate: NOW + ONE_HOUR_MS, status: 'resolved' };
+    expect(isDueDateApproaching(r, NOW)).toBe(false);
+  });
+
+  test('no dueDate means not approaching', () => {
+    expect(isDueDateApproaching({ status: 'pending' }, NOW)).toBe(false);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// getDueDateStatus — all status branches
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Sprint 4 US4 — getDueDateStatus: all branches', () => {
+
+  test('no dueDate returns "no-due-date"', () => {
+    expect(getDueDateStatus({ status: 'pending' }, NOW)).toBe('no-due-date');
+  });
+
+  test('resolved request returns "resolved" regardless of date', () => {
+    expect(getDueDateStatus({ dueDate: NOW - ONE_DAY_MS, status: 'resolved' }, NOW)).toBe('resolved');
+  });
+
+  test('past due date on pending returns "overdue"', () => {
+    expect(getDueDateStatus({ dueDate: NOW - ONE_DAY_MS, status: 'pending' }, NOW)).toBe('overdue');
+  });
+
+  test('due in 12 hours returns "approaching"', () => {
+    expect(getDueDateStatus({ dueDate: NOW + 12 * ONE_HOUR_MS, status: 'pending' }, NOW)).toBe('approaching');
+  });
+
+  test('due in 3 days returns "on-track"', () => {
+    expect(getDueDateStatus({ dueDate: NOW + 3 * ONE_DAY_MS, status: 'pending' }, NOW)).toBe('on-track');
+  });
+
+  test('in-progress overdue returns "overdue"', () => {
+    expect(getDueDateStatus({ dueDate: NOW - ONE_HOUR_MS, status: 'in-progress' }, NOW)).toBe('overdue');
+  });
+
+  test('in-progress approaching returns "approaching"', () => {
+    expect(getDueDateStatus({ dueDate: NOW + 6 * ONE_HOUR_MS, status: 'in-progress' }, NOW)).toBe('approaching');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// canAssignDueDate — role enforcement
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Sprint 4 US4 — canAssignDueDate: role enforcement', () => {
+
+  test('admin can assign due dates', () => {
+    expect(canAssignDueDate('admin').valid).toBe(true);
+  });
+
+  test('admin returns no error', () => {
+    expect(canAssignDueDate('admin').error).toBeNull();
+  });
+
+  test('worker cannot assign due dates', () => {
+    const r = canAssignDueDate('worker');
+    expect(r.valid).toBe(false);
+    expect(r.error.toLowerCase()).toContain('admin');
+  });
+
+  test('resident cannot assign due dates', () => {
+    const r = canAssignDueDate('user');
+    expect(r.valid).toBe(false);
+    expect(r.error.toLowerCase()).toContain('admin');
+  });
+
+  test('empty role string cannot assign due dates', () => {
+    expect(canAssignDueDate('').valid).toBe(false);
+  });
+
+  test('unknown role cannot assign due dates', () => {
+    expect(canAssignDueDate('superadmin').valid).toBe(false);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// buildDueDatePayload — payload structure
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Sprint 4 US4 — buildDueDatePayload: payload structure', () => {
+
+  test('payload contains dueDate as ms timestamp', () => {
+    const ts = NOW + ONE_DAY_MS;
+    expect(buildDueDatePayload(ts, 'admin_uid').dueDate).toBe(ts);
+  });
+
+  test('ISO date string is converted to ms timestamp', () => {
+    const iso = new Date(NOW + ONE_DAY_MS).toISOString().slice(0, 10);
+    const ts  = Date.parse(iso);
+    expect(buildDueDatePayload(iso, 'admin_uid').dueDate).toBe(ts);
+  });
+
+  test('payload contains dueDateSetBy with admin UID', () => {
+    expect(buildDueDatePayload(NOW + ONE_DAY_MS, 'admin_001').dueDateSetBy).toBe('admin_001');
+  });
+
+  test('payload contains dueDateUpdatedAt timestamp', () => {
+    const before = Date.now();
+    expect(buildDueDatePayload(NOW + ONE_DAY_MS, 'admin_001').dueDateUpdatedAt).toBeGreaterThanOrEqual(before);
+  });
+
+  test('payload has exactly three fields', () => {
+    const keys = Object.keys(buildDueDatePayload(NOW + ONE_DAY_MS, 'admin_uid'));
+    expect(keys).toEqual(expect.arrayContaining(['dueDate', 'dueDateSetBy', 'dueDateUpdatedAt']));
+    expect(keys.length).toBe(3);
+  });
+
+  test('two successive calls produce independent objects', () => {
+    const p1 = buildDueDatePayload(NOW + ONE_DAY_MS, 'admin_A');
+    const p2 = buildDueDatePayload(NOW + 2 * ONE_DAY_MS, 'admin_B');
+    expect(p1.dueDateSetBy).toBe('admin_A');
+    expect(p2.dueDateSetBy).toBe('admin_B');
+    expect(p1.dueDate).not.toBe(p2.dueDate);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// formatDueDateDisplay — all display branches
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Sprint 4 US4 — formatDueDateDisplay: display strings', () => {
+
+  test('no dueDate returns "No due date"', () => {
+    expect(formatDueDateDisplay({ status: 'pending' }, NOW)).toBe('No due date');
+  });
+
+  test('null dueDate returns "No due date"', () => {
+    expect(formatDueDateDisplay({ dueDate: null, status: 'pending' }, NOW)).toBe('No due date');
+  });
+
+  test('resolved request returns "Resolved"', () => {
+    expect(formatDueDateDisplay({ dueDate: NOW - ONE_DAY_MS, status: 'resolved' }, NOW)).toBe('Resolved');
+  });
+
+  test('overdue by 1 day shows singular "day"', () => {
+    const r = { dueDate: NOW - ONE_DAY_MS - ONE_HOUR_MS, status: 'pending' };
+    expect(formatDueDateDisplay(r, NOW)).toContain('1 day');
+  });
+
+  test('overdue by 3 days shows plural "days"', () => {
+    const r = { dueDate: NOW - 3 * ONE_DAY_MS, status: 'pending' };
+    expect(formatDueDateDisplay(r, NOW)).toContain('3 days');
+  });
+
+  test('overdue by less than 1 day shows "Overdue"', () => {
+    const r = { dueDate: NOW - 30 * 60_000, status: 'pending' };
+    expect(formatDueDateDisplay(r, NOW)).toBe('Overdue');
+  });
+
+  test('due in 6 hours shows "Due in 6 hours"', () => {
+    const r = { dueDate: NOW + 6 * ONE_HOUR_MS, status: 'pending' };
+    expect(formatDueDateDisplay(r, NOW)).toBe('Due in 6 hours');
+  });
+
+  test('due in 1 hour shows singular "hour"', () => {
+    const r = { dueDate: NOW + ONE_HOUR_MS, status: 'pending' };
+    expect(formatDueDateDisplay(r, NOW)).toBe('Due in 1 hour');
+  });
+
+  test('on-track request shows "Due" with a date', () => {
+    const r = { dueDate: NOW + 5 * ONE_DAY_MS, status: 'pending' };
+    expect(formatDueDateDisplay(r, NOW)).toMatch(/^Due \d+ \w+ \d{4}$/);
+  });
+
+  test('invalid date string shows "Invalid date"', () => {
+    const r = { dueDate: 'not-a-date', status: 'pending' };
+    expect(formatDueDateDisplay(r, NOW)).toBe('Invalid date');
   });
 });
