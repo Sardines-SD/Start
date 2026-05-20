@@ -483,6 +483,148 @@ function getThemeClass(theme) {
   return theme === 'dark' ? 'dark-mode' : 'light-mode';
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 4 US4 — Assign Due Dates to Requests
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** How many hours before a due date a worker reminder is sent. */
+const DUE_DATE_REMINDER_HOURS = 24;
+
+/**
+ * Returns true when a due-date value is a valid future-or-present ISO 8601
+ * date string or a positive Unix timestamp in milliseconds.
+ * Admins can assign any date that is not already in the past relative to now.
+ * @param {string|number} value  - ISO date string (YYYY-MM-DD) or ms timestamp
+ * @param {number} [nowMs]       - Override for "now" (useful in tests)
+ */
+function isValidDueDate(value, nowMs = Date.now()) {
+  if (value === null || value === undefined || value === '') return false;
+  const ts = typeof value === 'number' ? value : Date.parse(value);
+  if (isNaN(ts)) return false;
+  // Must be a positive timestamp and not more than 2 years in the future
+  if (ts <= 0) return false;
+  const twoYearsMs = 2 * 365 * 24 * 3_600_000;
+  if (ts > nowMs + twoYearsMs) return false;
+  return true;
+}
+
+/**
+ * Returns true when a request is overdue.
+ * A request is overdue when:
+ *   - it has a dueDate
+ *   - that date is in the past
+ *   - its status is NOT "resolved"
+ * @param {object} report  - Firestore request document
+ * @param {number} [nowMs] - Override for "now" (useful in tests)
+ */
+function isDueDateOverdue(report, nowMs = Date.now()) {
+  if (!report.dueDate)             return false;
+  if (report.status === 'resolved') return false;
+  const ts = typeof report.dueDate === 'number'
+    ? report.dueDate
+    : Date.parse(report.dueDate);
+  if (isNaN(ts)) return false;
+  return ts < nowMs;
+}
+
+/**
+ * Returns a status string describing the due-date state of a request.
+ * Possible values: 'overdue' | 'approaching' | 'on-track' | 'resolved' | 'no-due-date'
+ * @param {object} report
+ * @param {number} [nowMs]
+ */
+function getDueDateStatus(report, nowMs = Date.now()) {
+  if (!report.dueDate)              return 'no-due-date';
+  if (report.status === 'resolved') return 'resolved';
+  if (isDueDateOverdue(report, nowMs)) return 'overdue';
+  if (isDueDateApproaching(report, nowMs)) return 'approaching';
+  return 'on-track';
+}
+
+/**
+ * Returns true when a due date is within the reminder window (DUE_DATE_REMINDER_HOURS)
+ * but has not yet passed.
+ * @param {object} report
+ * @param {number} [nowMs]
+ */
+function isDueDateApproaching(report, nowMs = Date.now()) {
+  if (!report.dueDate)              return false;
+  if (report.status === 'resolved') return false;
+  const ts = typeof report.dueDate === 'number'
+    ? report.dueDate
+    : Date.parse(report.dueDate);
+  if (isNaN(ts)) return false;
+  if (ts < nowMs) return false; // already overdue
+  return (ts - nowMs) <= DUE_DATE_REMINDER_HOURS * 3_600_000;
+}
+
+/**
+ * Returns true when the requesting user's role is allowed to set due dates.
+ * Only admins may assign or update due dates.
+ * @param {string} role
+ * @returns {{ valid: boolean, error: string|null }}
+ */
+function canAssignDueDate(role) {
+  if (role !== 'admin') {
+    return { valid: false, error: 'Only admins can assign due dates' };
+  }
+  return { valid: true, error: null };
+}
+
+/**
+ * Builds the Firestore update payload for a due-date assignment or update.
+ * @param {string|number} dueDate  - ISO date string or ms timestamp
+ * @param {string} assignedByUid   - UID of the admin setting the date
+ * @returns {object} Firestore update fields
+ */
+function buildDueDatePayload(dueDate, assignedByUid) {
+  const ts = typeof dueDate === 'number' ? dueDate : Date.parse(dueDate);
+  return {
+    dueDate:          ts,
+    dueDateSetBy:     assignedByUid,
+    dueDateUpdatedAt: Date.now(),
+  };
+}
+
+/**
+ * Returns a human-readable due-date string for display in dashboards.
+ * - Overdue:     "Overdue by X days"
+ * - Approaching: "Due in X hours"
+ * - On-track:    "Due on DD MMM YYYY"
+ * - No date:     "No due date"
+ * @param {object} report
+ * @param {number} [nowMs]
+ */
+function formatDueDateDisplay(report, nowMs = Date.now()) {
+  if (!report.dueDate) return 'No due date';
+  const ts = typeof report.dueDate === 'number'
+    ? report.dueDate
+    : Date.parse(report.dueDate);
+  if (isNaN(ts)) return 'Invalid date';
+
+  if (report.status === 'resolved') {
+    return 'Resolved';
+  }
+
+  const diffMs   = ts - nowMs;
+  const diffDays = Math.floor(Math.abs(diffMs) / 86_400_000);
+  const diffHrs  = Math.floor(Math.abs(diffMs) / 3_600_000);
+
+  if (diffMs < 0) {
+    // Overdue
+    return diffDays >= 1 ? `Overdue by ${diffDays} day${diffDays === 1 ? '' : 's'}` : 'Overdue';
+  }
+  if (diffMs <= DUE_DATE_REMINDER_HOURS * 3_600_000) {
+    // Approaching
+    return diffHrs >= 1 ? `Due in ${diffHrs} hour${diffHrs === 1 ? '' : 's'}` : 'Due very soon';
+  }
+  // On track — format as readable date
+  const d = new Date(ts);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `Due ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
 // ── Exports ───────────────────────────────────────────────────────────────────
 module.exports = {
   // Sprint 1
@@ -529,6 +671,15 @@ module.exports = {
   isValidTheme,
   toggleTheme,
   getThemeClass,
+  // Sprint 4 US4 — Due Dates
+  isValidDueDate,
+  isDueDateOverdue,
+  getDueDateStatus,
+  isDueDateApproaching,
+  canAssignDueDate,
+  buildDueDatePayload,
+  formatDueDateDisplay,
+  DUE_DATE_REMINDER_HOURS,
   // Constants
   VALID_STATUSES,
   VALID_ROLES,
